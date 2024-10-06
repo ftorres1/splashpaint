@@ -69,6 +69,7 @@ def is_admin(user):
 # Función principal
 def main():
     st.sidebar.title("Menú")
+    st.write(st.secrets)  # Muestra todos los secretos disponibles
     option = st.sidebar.radio("Selecciona una opción", ["Pintar", "Administración"])
 
     query_params = st.query_params  # Uso actualizado para obtener los parámetros de consulta
