@@ -18,7 +18,7 @@ DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1292564820016627855/akZ0
 GRID_SIZE = 20
 if 'canvas' not in st.session_state:
     st.session_state.canvas = np.ones((GRID_SIZE, GRID_SIZE, 3))  # Blanco (1,1,1 en RGB)
-
+    
 # Función para mostrar el lienzo
 def draw_canvas():
     fig, ax = plt.subplots(figsize=(6, 6))
@@ -46,9 +46,9 @@ def get_user_info(access_token):
     return response.json()
 
 # Función para enviar notificación a Discord
-def send_discord_notification(user, position, color):
+def send_discord_notification(username, position, color):
     message = {
-        "content": f"{user['username']} pintó en la posición {position} con el color {color}."
+        "content": f"{username} pintó en la posición {position} con el color {color}."
     }
     requests.post(DISCORD_WEBHOOK_URL, json=message)
 
@@ -70,7 +70,13 @@ def main():
         else:
             st.error("Error al obtener el token de acceso.")
 
+    # Permitir que los usuarios ingresen su nombre de usuario
     if 'user' not in st.session_state:
+        st.sidebar.subheader("Identifícate")
+        username = st.sidebar.text_input("Ingresa tu nombre de usuario", "")
+        st.session_state.username = username
+
+        # Opción de iniciar sesión con Discord
         params = {
             'client_id': DISCORD_CLIENT_ID,
             'redirect_uri': DISCORD_REDIRECT_URI,
@@ -81,6 +87,7 @@ def main():
         st.sidebar.markdown(f"[Iniciar sesión con Discord]({auth_url})")
     else:
         st.sidebar.write(f"Bienvenido, {st.session_state.user['username']}!")
+        st.session_state.username = st.session_state.user['username']
 
     if option == "Pintar":
         # Lógica de pintura aquí
@@ -88,31 +95,18 @@ def main():
         selected_color = np.array([int(color.lstrip('#')[i:i+2], 16) for i in (0, 2, 4)]) / 255
 
         selected_row = st.selectbox('Selecciona la fila (letra)', [chr(i) for i in range(65, 65 + GRID_SIZE)])  # A-T
-        selected_col = st.selectbox('Selecciona la columna (número)', [str(i) for i in range(1, GRID_SIZE + 1)])  # 1-20
+        selected_col = st.selectbox('Selecciona la columna (número)', list(range(1, GRID_SIZE + 1)))
 
         if st.button("Pintar"):
-            # Convertir la selección a índices
-            row_index = ord(selected_row) - 65  # Convertir letra a índice (A=0, B=1, ...)
-            col_index = int(selected_col) - 1  # Convertir número a índice (1=0, 2=1, ...)
+            # Convertir letras a índices
+            row_index = ord(selected_row) - 65
+            col_index = selected_col - 1
 
-            # Pintar el píxel
+            # Pintar en el lienzo
             st.session_state.canvas[row_index, col_index] = selected_color
+            
+            # Notificación a Discord
+            send_discord_notification(st.session_state.username, f"{selected_row}{selected_col}", color)
 
-            # Enviar notificación a Discord solo si el usuario está autenticado
-            if 'user' in st.session_state:
-                send_discord_notification(st.session_state.user, f"{selected_row}{selected_col}", color)
-            else:
-                st.error("Debes iniciar sesión para pintar y notificar.")
-
-            # Mostrar el lienzo actualizado
-            draw_canvas()
-
-    elif option == "Administración":
-        st.write("Panel de administración.")
-
-    # Mostrar el lienzo por defecto
-    draw_canvas()
-
-# Ejecutar la aplicación
-if __name__ == "__main__":
-    main()
+        # Mostrar el lienzo
+        draw_canvas()
