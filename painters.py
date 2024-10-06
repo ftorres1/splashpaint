@@ -6,7 +6,7 @@ def login_with_discord():
     discord_auth_url = (
         f"https://discord.com/api/oauth2/authorize"
         f"?client_id={st.secrets['discord']['client_id']}"
-        f"&redirect_uri=https://splashplace.streamlit.app/callback"
+        f"&redirect_uri=https://splashplace.streamlit.app/"
         f"&response_type=code"
         f"&scope=identify"
     )
