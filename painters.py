@@ -1,3 +1,4 @@
+import os
 import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
@@ -6,9 +7,9 @@ import requests
 from urllib.parse import urlencode
 
 # Configuración de Discord
-DISCORD_CLIENT_ID = 'YOUR_CLIENT_ID'
-DISCORD_CLIENT_SECRET = 'YOUR_CLIENT_SECRET'
-DISCORD_REDIRECT_URI = 'http://localhost:8501/'  # Ajusta esto según tu URL de producción
+DISCORD_CLIENT_ID = os.getenv('DISCORD_CLIENT_ID')
+DISCORD_CLIENT_SECRET = os.getenv('DISCORD_CLIENT_SECRET')
+DISCORD_REDIRECT_URI = 'https://your-app-name.streamlit.app/'  # Ajusta esto con tu URL de Streamlit Cloud
 DISCORD_API_URL = 'https://discord.com/api/v10'
 
 # Inicializamos el lienzo como una matriz de colores (en blanco)
@@ -57,6 +58,20 @@ def main():
     st.sidebar.title("Menú")
     option = st.sidebar.radio("Selecciona una opción", ["Pintar", "Administración"])
 
+    # Verificar si hay un código de autorización en la URL
+    query_params = st.experimental_get_query_params()
+    if 'code' in query_params:
+        code = query_params['code'][0]  # Obtener el código de autorización
+        token_data = get_access_token(code)
+        access_token = token_data.get('access_token')
+
+        if access_token:
+            user_info = get_user_info(access_token)
+            st.session_state.user = user_info
+            st.experimental_set_query_params()  # Limpiar los parámetros de consulta
+        else:
+            st.error("Error al obtener el token de acceso.")
+
     # Comprobar el estado de autenticación
     if 'user' not in st.session_state:
         # URL de autorización
@@ -82,6 +97,7 @@ def main():
         row_idx = ord(selected_row) - 65
         col_idx = int(selected_col) - 1
 
+        # Tiempo de espera (en segundos)
         WAIT_TIME = 15
         current_time = time.time()
 
@@ -97,15 +113,6 @@ def main():
 
     elif option == "Administración":
         admin_panel()
-
-    # Manejar el callback de Discord
-    if 'code' in st.experimental_get_query_params():
-        code = st.experimental_get_query_params()['code'][0]
-        token_info = get_access_token(code)
-        if 'access_token' in token_info:
-            access_token = token_info['access_token']
-            user_info = get_user_info(access_token)
-            st.session_state.user = user_info  # Guardar información del usuario
 
 if __name__ == "__main__":
     main()
