@@ -35,9 +35,6 @@ def main():
 
         # Cambiamos el color del píxel seleccionado
         st.session_state.canvas[y, x] = np.array([int(color.lstrip('#')[i:i + 2], 16) for i in (0, 2, 4)]) / 255
-
-        # Volver a mostrar el lienzo actualizado
-        draw_canvas()
         
     # Mostrar el lienzo
     draw_canvas()
