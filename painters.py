@@ -69,6 +69,7 @@ def handle_callback():
     code = st.query_params.get('code')  # Usando st.query_params en lugar de st.experimental_get_query_params
     if code:
         code = code[0]  # Convertir de lista a cadena si es necesario
+        st.write("Authorization code received:", code)  # Mostrar el código completo para depuración
         token_url = 'https://discord.com/api/oauth2/token'
         data = {
             'client_id': st.secrets["discord"]["client_id"],
@@ -84,7 +85,6 @@ def handle_callback():
         response = requests.post(token_url, data=data, headers=headers)
         response_data = response.json()
         st.write("Response data:", response_data)  # <-- Esta línea ayuda a depurar la respuesta de Discord
-
         
         if 'access_token' in response_data:
             st.session_state.token = response_data['access_token']
