@@ -36,19 +36,25 @@ def draw_canvas():
     st.pyplot(fig)
 
 # Función para la página de pintura
+import time  # Asegúrate de importar el módulo time
+
 def paint_page():
     st.title("Pinta en el lienzo")
     st.write("Antes de jugar, por favor ve al menú e inicia sesión o registra tu nombre (en dispositivos móviles, toca la flecha de arriba en el lado izquierdo de tu pantalla).")
 
     # Inicializamos el cooldown
-    COOLDOWN_PERIOD = 5  # en segundos
+    INITIAL_COOLDOWN_PERIOD = 15  # 15 segundos iniciales
+    COOLDOWN_PERIOD = 15           # 15 segundos entre cada pintura
 
-    # Verificamos si el tiempo de la última acción de pintura está almacenado
+    # Verificamos si los tiempos están almacenados
     if 'last_paint_time' not in st.session_state:
         st.session_state.last_paint_time = 0  # Inicializa el tiempo si no existe
+    if 'initial_cooldown_time' not in st.session_state:
+        st.session_state.initial_cooldown_time = time.time()  # Inicializa el tiempo del cooldown inicial
 
     # Mostrar tiempo restante del cooldown
     current_time = time.time()
+    time_since_initial_cooldown = current_time - st.session_state.initial_cooldown_time
     time_since_last_paint = current_time - st.session_state.last_paint_time
 
     # Seleccionar color
@@ -60,7 +66,12 @@ def paint_page():
 
     # Lógica para pintar en el lienzo
     if st.button('Pintar'):
-        if time_since_last_paint < COOLDOWN_PERIOD:
+        # Verificar si el usuario está en cooldown inicial
+        if time_since_initial_cooldown < INITIAL_COOLDOWN_PERIOD:
+            remaining_time = INITIAL_COOLDOWN_PERIOD - time_since_initial_cooldown
+            st.warning(f"Debes esperar {remaining_time:.1f} segundos antes de pintar.")
+        # Verificar si el usuario está en cooldown después de pintar
+        elif time_since_last_paint < COOLDOWN_PERIOD:
             remaining_time = COOLDOWN_PERIOD - time_since_last_paint
             st.warning(f"Debes esperar {remaining_time:.1f} segundos antes de pintar nuevamente.")
         else:
