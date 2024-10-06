@@ -65,6 +65,9 @@ def discord_login():
             st.error("Error al obtener los datos del usuario. Intenta iniciar sesión nuevamente.")
 
 # Función para manejar el callback de Discord
+import urllib.parse
+
+# Función para manejar el callback de Discord
 def handle_callback():
     query_params = st.query_params  # Obtener los parámetros de la URL
     code = query_params.get('code')
@@ -78,13 +81,18 @@ def handle_callback():
             'client_secret': st.secrets["discord"]["client_secret"],
             'grant_type': 'authorization_code',
             'code': code,
-            'redirect_uri': st.secrets["discord"]["redirect_uri"]
+            'redirect_uri': st.secrets["discord"]["redirect_uri"],
+            'scope': 'identify'
         }
         headers = {
             'Content-Type': 'application/x-www-form-urlencoded'
         }
-        
-        response = requests.post(token_url, data=data, headers=headers)
+
+        # Aseguramos que los datos estén correctamente codificados
+        encoded_data = urllib.parse.urlencode(data)
+
+        # Realizamos la solicitud POST con datos codificados correctamente
+        response = requests.post(token_url, data=encoded_data, headers=headers)
         response_data = response.json()
         st.write("Response data:", response_data)  # <-- Esta línea ayuda a depurar la respuesta de Discord
         
