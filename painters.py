@@ -103,15 +103,22 @@ def main():
         selected_row = st.selectbox('Selecciona la fila (0-19)', range(GRID_SIZE))
         selected_col = st.selectbox('Selecciona la columna (0-19)', range(GRID_SIZE))
 
-        # Botón para pintar
-        if st.button("Pintar"):
-            st.session_state.canvas[selected_row, selected_col] = selected_color
-            position = f"{chr(selected_col + 65)}{selected_row + 1}"  # Convertir a A1, B2, etc.
-            user_id = st.session_state.user['id'] if 'user' in st.session_state else None
-            send_discord_notification(st.session_state.username, user_id, position, color)
+        # Verificar si el usuario ha ingresado un nombre
+        if st.session_state.username == "" and 'user' not in st.session_state:
+            st.warning("Debes ingresar un nombre de usuario o iniciar sesión para pintar.")
+        else:
+            # Botón para pintar
+            if st.button("Pintar"):
+                st.session_state.canvas[selected_row, selected_col] = selected_color
+                position = f"{chr(selected_col + 65)}{selected_row + 1}"  # Convertir a formato A1, B2, etc.
+                user_id = st.session_state.user['id'] if 'user' in st.session_state else None
+                send_discord_notification(st.session_state.username, user_id, position, color)  # Notificación a Discord
+                st.success(f"Pintaste en la posición {position} con el color {color}.")
+                draw_canvas()  # Redibujar el lienzo
 
-    # Dibujar el lienzo
-    draw_canvas()
+    elif option == "Administración":
+        st.write("Panel de administración (aquí puedes agregar lógica adicional).")
 
+# Ejecutar la aplicación
 if __name__ == "__main__":
     main()
