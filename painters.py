@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import json
 import requests
+from urllib.parse import urlencode
 
 # Cargar credenciales desde secrets.toml
 DISCORD_CLIENT_ID = st.secrets["discord"]["client_id"]
@@ -65,9 +66,10 @@ def discord_login():
 
 # Función para manejar el callback de Discord
 def handle_callback():
-    code = st.query_params.get('code')  # Usando st.query_params
+    code = st.experimental_get_query_params().get('code')
     if code:
-        code = code[0]  # Convertir de lista a cadena si es necesario
+        code = code[0]  # Convertir a cadena si es necesario
+
         token_url = DISCORD_TOKEN_URL
         data = {
             'client_id': DISCORD_CLIENT_ID,
@@ -76,19 +78,16 @@ def handle_callback():
             'code': code,
             'redirect_uri': DISCORD_REDIRECT_URI
         }
+
         headers = {
             'Content-Type': 'application/x-www-form-urlencoded'
         }
-        
+
         response = requests.post(token_url, data=data, headers=headers)
         response_data = response.json()
-        st.write("Response data:", response_data)  # Ayuda a depurar la respuesta de Discord
+        st.write("Response data:", response_data)  # <-- Esta línea ayuda a depurar la respuesta de Discord
 
-        # Manejar la respuesta para obtener el token
-        if response.status_code == 200 and 'access_token' in response_data:
-            st.session_state.token = response_data['access_token']
-        else:
-            st.error("Error al obtener el token de acceso. Revisa la respuesta.")
+
 
 # Función para la página de pintura
 def paint_page():
