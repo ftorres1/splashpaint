@@ -90,15 +90,29 @@ def main():
         selected_row = st.selectbox('Selecciona la fila (letra)', [chr(i) for i in range(65, 65 + GRID_SIZE)])  # A-T
         selected_col = st.selectbox('Selecciona la columna (número)', [str(i) for i in range(1, GRID_SIZE + 1)])  # 1-20
 
-        row_idx = ord(selected_row) - 65
-        col_idx = int(selected_col) - 1
-
-        # Lógica para pintar en el lienzo
         if st.button("Pintar"):
-            st.session_state.canvas[row_idx, col_idx] = selected_color  # Actualizar el lienzo
-            send_discord_notification(st.session_state.user, f"{selected_row}{selected_col}", color)  # Notificación a Discord
+            # Convertir la selección a índices
+            row_index = ord(selected_row) - 65  # Convertir letra a índice (A=0, B=1, ...)
+            col_index = int(selected_col) - 1  # Convertir número a índice (1=0, 2=1, ...)
 
-        draw_canvas()  # Mostrar el lienzo actualizado
+            # Pintar el píxel
+            st.session_state.canvas[row_index, col_index] = selected_color
 
+            # Enviar notificación a Discord solo si el usuario está autenticado
+            if 'user' in st.session_state:
+                send_discord_notification(st.session_state.user, f"{selected_row}{selected_col}", color)
+            else:
+                st.error("Debes iniciar sesión para pintar y notificar.")
+
+            # Mostrar el lienzo actualizado
+            draw_canvas()
+
+    elif option == "Administración":
+        st.write("Panel de administración.")
+
+    # Mostrar el lienzo por defecto
+    draw_canvas()
+
+# Ejecutar la aplicación
 if __name__ == "__main__":
     main()
