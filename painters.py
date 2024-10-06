@@ -83,10 +83,10 @@ def main():
     # Menú de navegación
     menu = st.sidebar.selectbox("Selecciona una opción", ["Inicio", "Pintar"])
 
-    if menu == "Inicio":
-        home_page()
-    elif menu == "Pintar":
+    if menu == "Pintar":
         paint_page()
+    elif menu == "Inicio":
+        home_page(
 
 # Ejecutamos la aplicación
 if __name__ == "__main__":
