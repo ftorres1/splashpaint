@@ -3,16 +3,7 @@ import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
 import json
-import requests
-from urllib.parse import urlencode
-
-# Cargar credenciales desde secrets.toml
-DISCORD_CLIENT_ID = st.secrets["discord"]["client_id"]
-DISCORD_CLIENT_SECRET = st.secrets["discord"]["client_secret"]
-DISCORD_REDIRECT_URI = st.secrets["discord"]["redirect_uri"]
-DISCORD_OAUTH2_URL = 'https://discord.com/api/oauth2/authorize'
-DISCORD_TOKEN_URL = 'https://discord.com/api/oauth2/token'
-DISCORD_USER_URL = 'https://discord.com/api/users/@me'
+import time
 
 # Definimos el tamaño del lienzo
 GRID_SIZE = 20
@@ -40,77 +31,27 @@ if 'canvas' not in st.session_state:
 def draw_canvas():
     fig, ax = plt.subplots(figsize=(6, 6))
     ax.imshow(st.session_state.canvas, interpolation='nearest')
-    ax.set_xticks([])
-    ax.set_yticks([])
+    ax.set_xticks([])  # Quitar las marcas del eje X
+    ax.set_yticks([])  # Quitar las marcas del eje Y
     st.pyplot(fig)
-
-# Función para manejar el inicio de sesión con Discord
-def discord_login():
-    # Si no hay token en la sesión, redirige al usuario a Discord
-    if 'token' not in st.session_state:
-        # Construir la URL de autorización
-        auth_url = f"{DISCORD_OAUTH2_URL}?client_id={DISCORD_CLIENT_ID}&redirect_uri={DISCORD_REDIRECT_URI}&response_type=code&scope=identify"
-        st.sidebar.markdown(f"[Iniciar sesión con Discord]({auth_url})")
-    else:
-        # Si hay un token, muestra el usuario
-        headers = {
-            'Authorization': f'Bearer {st.session_state.token}'
-        }
-        response = requests.get(DISCORD_USER_URL, headers=headers)
-        if response.status_code == 200:
-            user_data = response.json()
-            st.sidebar.write(f"¡Hola, {user_data['username']}!")
-            st.sidebar.write("Puedes empezar a pintar en el lienzo.")
-        else:
-            st.error("Error al obtener los datos del usuario. Intenta iniciar sesión nuevamente.")
-
-# Función para manejar el callback de Discord
-import urllib.parse
-
-# Función para manejar el callback de Discord
-def handle_callback():
-    query_params = st.query_params  # Obtener los parámetros de la URL
-    code = query_params.get('code')
-    if code:
-        code = code[0]  # Convertir de lista a cadena si es necesario
-        st.write("Authorization code received:", code)  # Mostrar el código completo para depuración
-        
-        token_url = 'https://discord.com/api/oauth2/token'
-        data = {
-            'client_id': st.secrets["discord"]["client_id"],
-            'client_secret': st.secrets["discord"]["client_secret"],
-            'grant_type': 'authorization_code',
-            'code': code,
-            'redirect_uri': st.secrets["discord"]["redirect_uri"],
-            'scope': 'identify'
-        }
-        headers = {
-            'Content-Type': 'application/x-www-form-urlencoded'
-        }
-
-        # Aseguramos que los datos estén correctamente codificados
-        encoded_data = urllib.parse.urlencode(data)
-
-        # Realizamos la solicitud POST con datos codificados correctamente
-        response = requests.post(token_url, data=encoded_data, headers=headers)
-        response_data = response.json()
-        st.write("Response data:", response_data)  # <-- Esta línea ayuda a depurar la respuesta de Discord
-        
-        if 'access_token' in response_data:
-            st.session_state.token = response_data['access_token']
-        else:
-            st.error("Error al obtener el token de acceso. Revisa la respuesta.")
 
 # Función para la página de pintura
 def paint_page():
     st.title("Pinta en el lienzo")
-    st.write("Antes de jugar, por favor ve al menú e inicia sesión o registra tu nombre (en dispositivos móviles, toca la flecha de arriba en el lado izquierdo de tu pantalla).")
-
+    st.write("Puedes pintar en el lienzo seleccionando un color y eligiendo una posición.")
+    
     # Mostrar el lienzo
     draw_canvas()
 
-    # Solo permitir la pintura si el usuario ha iniciado sesión
-    if 'token' in st.session_state:
+    # Cooldown para limitar la frecuencia de pintura (15 segundos entre cada acción de pintura)
+    if 'last_paint_time' not in st.session_state:
+        st.session_state.last_paint_time = 0
+
+    time_since_last_paint = time.time() - st.session_state.last_paint_time
+
+    if time_since_last_paint < 15:
+        st.warning(f"Debes esperar {int(15 - time_since_last_paint)} segundos antes de pintar de nuevo.")
+    else:
         # Seleccionar color
         color = st.color_picker('Elige un color', '#000000')
 
@@ -130,13 +71,14 @@ def paint_page():
             
             # Guardar el estado del lienzo después de pintar
             save_canvas()
-    else:
-        st.warning("Por favor, inicia sesión para pintar en el lienzo.")
+            
+            # Actualizar el tiempo del último pintado
+            st.session_state.last_paint_time = time.time()
 
+# Lógica principal de la aplicación
 def main():
-    discord_login()  # Manejar el inicio de sesión
-    handle_callback()  # Manejar el callback de Discord
-    paint_page()  # Mostrar la página de pintura
+    st.sidebar.title("Opciones de Pintura")
+    paint_page()
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
