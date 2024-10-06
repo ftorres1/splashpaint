@@ -66,29 +66,31 @@ def discord_login():
 
 # Función para manejar el callback de Discord
 def handle_callback():
-    code = st.experimental_get_query_params().get('code')
+    code = st.query_params.get('code')  # Usando st.query_params en lugar de st.experimental_get_query_params
     if code:
-        code = code[0]  # Convertir a cadena si es necesario
-
-        token_url = DISCORD_TOKEN_URL
+        code = code[0]  # Convertir de lista a cadena si es necesario
+        token_url = 'https://discord.com/api/oauth2/token'
         data = {
-            'client_id': DISCORD_CLIENT_ID,
-            'client_secret': DISCORD_CLIENT_SECRET,
+            'client_id': st.secrets["discord"]["client_id"],
+            'client_secret': st.secrets["discord"]["client_secret"],
             'grant_type': 'authorization_code',
             'code': code,
-            'redirect_uri': DISCORD_REDIRECT_URI
+            'redirect_uri': st.secrets["discord"]["redirect_uri"]
         }
-
         headers = {
             'Content-Type': 'application/x-www-form-urlencoded'
         }
-
+        
         response = requests.post(token_url, data=data, headers=headers)
         response_data = response.json()
         st.write("Response data:", response_data)  # <-- Esta línea ayuda a depurar la respuesta de Discord
 
-
-
+        
+        if 'access_token' in response_data:
+            st.session_state.token = response_data['access_token']
+        else:
+            st.error("Error al obtener el token de acceso. Revisa la respuesta.")
+            
 # Función para la página de pintura
 def paint_page():
     st.title("Pinta en el lienzo")
