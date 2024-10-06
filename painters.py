@@ -53,7 +53,7 @@ def send_discord_notification(username, user_id, position, color):
         }
     else:
         message = {
-            "content": f"usuario (Invitado) pintó en la posición {position} con el color {color}."
+            "content": f"usuario ({username}) pintó en la posición {position} con el color {color}."
         }
     requests.post(DISCORD_WEBHOOK_URL, json=message)
 
@@ -99,26 +99,25 @@ def main():
         color = st.color_picker('Selecciona un color', '#000000')
         selected_color = np.array([int(color.lstrip('#')[i:i+2], 16) for i in (0, 2, 4)]) / 255
 
-        # Selección de posición para pintar
-        selected_row = st.selectbox('Selecciona la fila (0-19)', range(GRID_SIZE))
-        selected_col = st.selectbox('Selecciona la columna (0-19)', range(GRID_SIZE))
+        # Selección del pixel
+        selected_row = st.number_input("Fila (0 a 19)", min_value=0, max_value=GRID_SIZE - 1, step=1)
+        selected_col = st.number_input("Columna (0 a 19)", min_value=0, max_value=GRID_SIZE - 1, step=1)
 
-        # Verificar si el usuario ha ingresado un nombre
-        if st.session_state.username == "" and 'user' not in st.session_state:
-            st.warning("Debes ingresar un nombre de usuario o iniciar sesión para pintar.")
-        else:
-            # Botón para pintar
-            if st.button("Pintar"):
+        # Botón para pintar
+        if st.button("Pintar"):
+            if st.session_state.username:  # Asegurarse de que el usuario tenga un nombre
                 st.session_state.canvas[selected_row, selected_col] = selected_color
-                position = f"{chr(selected_col + 65)}{selected_row + 1}"  # Convertir a formato A1, B2, etc.
+                position = f"{chr(selected_col + 65)}{selected_row + 1}"  # Convertir a A1, B2, etc.
                 user_id = st.session_state.user['id'] if 'user' in st.session_state else None
-                send_discord_notification(st.session_state.username, user_id, position, color)  # Notificación a Discord
+
+                # Enviar notificación a Discord
+                send_discord_notification(st.session_state.username, user_id, position, color)
+
                 st.success(f"Pintaste en la posición {position} con el color {color}.")
-                draw_canvas()  # Redibujar el lienzo
+            else:
+                st.error("Debes ingresar un nombre de usuario o iniciar sesión para pintar.")
 
-    elif option == "Administración":
-        st.write("Panel de administración (aquí puedes agregar lógica adicional).")
+    draw_canvas()
 
-# Ejecutar la aplicación
 if __name__ == "__main__":
     main()
