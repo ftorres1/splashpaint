@@ -3,7 +3,16 @@ import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
 import json
+import requests
 import time
+
+# Cargar credenciales desde secrets.toml
+DISCORD_CLIENT_ID = st.secrets["discord"]["client_id"]
+DISCORD_CLIENT_SECRET = st.secrets["discord"]["client_secret"]
+DISCORD_REDIRECT_URI = st.secrets["discord"]["redirect_uri"]
+DISCORD_OAUTH2_URL = 'https://discord.com/api/oauth2/authorize'
+DISCORD_TOKEN_URL = 'https://discord.com/api/oauth2/token'
+DISCORD_USER_URL = 'https://discord.com/api/users/@me'
 
 # Definimos el tamaño del lienzo
 GRID_SIZE = 20
@@ -35,46 +44,59 @@ def draw_canvas():
     ax.set_yticks([])
     st.pyplot(fig)
 
-# Función para la página de pintura
-import time  # Asegúrate de importar el módulo time
+# Función para manejar el inicio de sesión con Discord
+def discord_login():
+    # Si no hay token en la sesión, redirige al usuario a Discord
+    if 'token' not in st.session_state:
+        st.sidebar.markdown(f"[Iniciar sesión con Discord](https://discord.com/api/oauth2/authorize?client_id={DISCORD_CLIENT_ID}&redirect_uri={DISCORD_REDIRECT_URI}&response_type=code&scope=identify)")
+    else:
+        # Si hay un token, muestra el usuario
+        headers = {
+            'Authorization': f'Bearer {st.session_state.token}'
+        }
+        response = requests.get(DISCORD_USER_URL, headers=headers)
+        user_data = response.json()
+        st.sidebar.write(f"¡Hola, {user_data['username']}!")
+        st.sidebar.write("Puedes empezar a pintar en el lienzo.")
 
+# Función para manejar el callback de Discord
+def handle_callback():
+    query_params = st.query_params
+    if 'code' in query_params:
+        code = query_params['code'][0]
+        data = {
+            'client_id': DISCORD_CLIENT_ID,
+            'client_secret': DISCORD_CLIENT_SECRET,
+            'grant_type': 'authorization_code',
+            'code': code,
+            'redirect_uri': DISCORD_REDIRECT_URI,
+            'scope': 'identify'
+        }
+        # Solicitar un token de acceso
+        response = requests.post(DISCORD_TOKEN_URL, data=data)
+        response_data = response.json()
+        st.session_state.token = response_data['access_token']
+        st.experimental_rerun()
+
+# Función para la página de pintura
 def paint_page():
     st.title("Pinta en el lienzo")
     st.write("Antes de jugar, por favor ve al menú e inicia sesión o registra tu nombre (en dispositivos móviles, toca la flecha de arriba en el lado izquierdo de tu pantalla).")
 
-    # Inicializamos el cooldown
-    INITIAL_COOLDOWN_PERIOD = 15  # 15 segundos iniciales
-    COOLDOWN_PERIOD = 15           # 15 segundos entre cada pintura
+    # Mostrar el lienzo
+    draw_canvas()
 
-    # Verificamos si los tiempos están almacenados
-    if 'last_paint_time' not in st.session_state:
-        st.session_state.last_paint_time = 0  # Inicializa el tiempo si no existe
-    if 'initial_cooldown_time' not in st.session_state:
-        st.session_state.initial_cooldown_time = time.time()  # Inicializa el tiempo del cooldown inicial
+    # Solo permitir la pintura si el usuario ha iniciado sesión
+    if 'token' in st.session_state:
+        # Seleccionar color
+        color = st.color_picker('Elige un color', '#000000')
 
-    # Mostrar tiempo restante del cooldown
-    current_time = time.time()
-    time_since_initial_cooldown = current_time - st.session_state.initial_cooldown_time
-    time_since_last_paint = current_time - st.session_state.last_paint_time
+        # Seleccionar fila y columna
+        fila = st.selectbox('Selecciona la fila (1-20)', range(1, GRID_SIZE + 1))
+        columna = st.selectbox('Selecciona la columna (1-20)', range(1, GRID_SIZE + 1))
 
-    # Seleccionar color
-    color = st.color_picker('Elige un color', '#000000')
-
-    # Seleccionar fila y columna
-    fila = st.selectbox('Selecciona la fila (1-20)', range(1, GRID_SIZE + 1))
-    columna = st.selectbox('Selecciona la columna (1-20)', range(1, GRID_SIZE + 1))
-
-    # Lógica para pintar en el lienzo
-    if st.button('Pintar'):
-        # Verificar si el usuario está en cooldown inicial
-        if time_since_initial_cooldown < INITIAL_COOLDOWN_PERIOD:
-            remaining_time = INITIAL_COOLDOWN_PERIOD - time_since_initial_cooldown
-            st.error(f"Debes esperar {remaining_time:.1f} segundos antes de pintar.")
-        # Verificar si el usuario está en cooldown después de pintar
-        elif time_since_last_paint < COOLDOWN_PERIOD:
-            remaining_time = COOLDOWN_PERIOD - time_since_last_paint
-            st.error(f"Debes esperar {remaining_time:.1f} segundos antes de pintar nuevamente.")
-        else:
+        # Lógica para pintar en el lienzo
+        if st.button('Pintar'):
             # Convertimos fila y columna a índices de la matriz
             x = columna - 1  # Ajustar a 0-index
             y = fila - 1     # Ajustar a 0-index
@@ -83,16 +105,10 @@ def paint_page():
             selected_color = np.array([int(color.lstrip('#')[i:i + 2], 16) for i in (0, 2, 4)]) / 255
             st.session_state.canvas[y, x] = selected_color
 
-            st.warning("¡El Pixel se ha colocado!")
-            
             # Guardar el estado del lienzo después de pintar
             save_canvas()
-            
-            # Actualizar el tiempo de la última acción de pintura
-            st.session_state.last_paint_time = current_time
-
-    # Mostrar el lienzo
-    draw_canvas()
+    else:
+        st.error("Debes iniciar sesión con Discord para poder pintar en el lienzo.")
 
 # Función para la página de inicio
 def home_page():
@@ -113,14 +129,20 @@ def home_page():
 
 # Función principal
 def main():
+    # Comprobar si el callback de Discord está presente
+    handle_callback()
+    
     # Menú de navegación
-    menu = st.sidebar.selectbox("Visita una página", ["Inicio", "Pintar"])
+    menu = st.sidebar.selectbox("Visita una página", ["Pintar", "Inicio"])
 
-    if menu == "Inicio":
-        home_page()
-    elif menu == "Pintar":
+    # Mostrar la opción para iniciar sesión con Discord
+    discord_login()
+
+    if menu == "Pintar":
         paint_page()
+    elif menu == "Inicio":
+        home_page()
 
-# Ejecutamos la aplicación
+# Ejecutar la aplicación
 if __name__ == "__main__":
     main()
