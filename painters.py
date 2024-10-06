@@ -18,7 +18,7 @@ DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1292564820016627855/akZ0
 GRID_SIZE = 20
 if 'canvas' not in st.session_state:
     st.session_state.canvas = np.ones((GRID_SIZE, GRID_SIZE, 3))  # Blanco (1,1,1 en RGB)
-    
+
 # Función para mostrar el lienzo
 def draw_canvas():
     fig, ax = plt.subplots(figsize=(6, 6))
@@ -94,19 +94,18 @@ def main():
         color = st.color_picker('Selecciona un color', '#000000')
         selected_color = np.array([int(color.lstrip('#')[i:i+2], 16) for i in (0, 2, 4)]) / 255
 
-        selected_row = st.selectbox('Selecciona la fila (letra)', [chr(i) for i in range(65, 65 + GRID_SIZE)])  # A-T
-        selected_col = st.selectbox('Selecciona la columna (número)', list(range(1, GRID_SIZE + 1)))
+        # Selección de posición para pintar
+        selected_row = st.selectbox('Selecciona la fila (0-19)', range(GRID_SIZE))
+        selected_col = st.selectbox('Selecciona la columna (0-19)', range(GRID_SIZE))
 
+        # Botón para pintar
         if st.button("Pintar"):
-            # Convertir letras a índices
-            row_index = ord(selected_row) - 65
-            col_index = selected_col - 1
+            st.session_state.canvas[selected_row, selected_col] = selected_color
+            position = f"{selected_row},{selected_col}"
+            send_discord_notification(st.session_state.username, position, color)  # Notificación a Discord
 
-            # Pintar en el lienzo
-            st.session_state.canvas[row_index, col_index] = selected_color
-            
-            # Notificación a Discord
-            send_discord_notification(st.session_state.username, f"{selected_row}{selected_col}", color)
+        draw_canvas()  # Mostrar el lienzo después de pintar
 
-        # Mostrar el lienzo
-        draw_canvas()
+# Ejecución de la aplicación
+if __name__ == "__main__":
+    main()
