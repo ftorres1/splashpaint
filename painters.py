@@ -2,7 +2,6 @@ import os
 import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
-import time
 import requests
 from urllib.parse import urlencode
 
@@ -16,9 +15,8 @@ DISCORD_API_URL = 'https://discord.com/api/v10'
 GRID_SIZE = 20
 if 'canvas' not in st.session_state:
     st.session_state.canvas = np.ones((GRID_SIZE, GRID_SIZE, 3))  # Blanco (1,1,1 en RGB)
-    st.session_state.last_paint_time = 0
 
-# Función para mostrar el lienzo sin coordenadas
+# Función para mostrar el lienzo
 def draw_canvas(canvas):
     fig, ax = plt.subplots(figsize=(6, 6))
     ax.imshow(canvas, interpolation='nearest')
@@ -44,37 +42,25 @@ def get_user_info(access_token):
     response = requests.get(f'{DISCORD_API_URL}/users/@me', headers=headers)
     return response.json()
 
-# Función para el panel de administración
-def admin_panel():
-    st.title("Panel de Administración de r/place")
-    draw_canvas(st.session_state.canvas)
-
-    if st.button("Reiniciar Lienzo"):
-        st.session_state.canvas = np.ones((GRID_SIZE, GRID_SIZE, 3))  # Reiniciar a blanco
-        st.success("Lienzo reiniciado con éxito.")
-
 # Función principal
 def main():
     st.sidebar.title("Menú")
     option = st.sidebar.radio("Selecciona una opción", ["Pintar", "Administración"])
 
-    # Verificar si hay un código de autorización en la URL
-    query_params = st.experimental_get_query_params()
+    query_params = st.query_params  # Uso actualizado para obtener los parámetros de consulta
     if 'code' in query_params:
-        code = query_params['code'][0]  # Obtener el código de autorización
+        code = query_params['code']
         token_data = get_access_token(code)
         access_token = token_data.get('access_token')
 
         if access_token:
             user_info = get_user_info(access_token)
             st.session_state.user = user_info
-            st.experimental_set_query_params()  # Limpiar los parámetros de consulta
+            st.query_params.clear()  # Limpiar los parámetros de consulta después del inicio de sesión
         else:
             st.error("Error al obtener el token de acceso.")
 
-    # Comprobar el estado de autenticación
     if 'user' not in st.session_state:
-        # URL de autorización
         params = {
             'client_id': DISCORD_CLIENT_ID,
             'redirect_uri': DISCORD_REDIRECT_URI,
@@ -87,7 +73,7 @@ def main():
         st.sidebar.write(f"Bienvenido, {st.session_state.user['username']}!")
 
     if option == "Pintar":
-        # Selector de color
+        # Lógica de pintura aquí
         color = st.color_picker('Selecciona un color', '#000000')
         selected_color = np.array([int(color.lstrip('#')[i:i+2], 16) for i in (0, 2, 4)]) / 255
 
@@ -97,22 +83,12 @@ def main():
         row_idx = ord(selected_row) - 65
         col_idx = int(selected_col) - 1
 
-        # Tiempo de espera (en segundos)
-        WAIT_TIME = 15
-        current_time = time.time()
-
-        if st.button('Pintar'):
-            time_since_last_paint = current_time - st.session_state.last_paint_time
-            if time_since_last_paint >= WAIT_TIME:
-                st.session_state.canvas[row_idx, col_idx] = selected_color
-                st.session_state.last_paint_time = current_time
-            else:
-                st.error(f"Debes esperar {WAIT_TIME - int(time_since_last_paint)} segundos antes de pintar de nuevo.")
+        # Lógica para pintar en el lienzo
+        if st.button("Pintar"):
+            st.session_state.canvas[row_idx, col_idx] = selected_color
+            st.success("Pintura realizada con éxito.")
 
         draw_canvas(st.session_state.canvas)
-
-    elif option == "Administración":
-        admin_panel()
 
 if __name__ == "__main__":
     main()
