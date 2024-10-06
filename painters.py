@@ -46,10 +46,15 @@ def get_user_info(access_token):
     return response.json()
 
 # Función para enviar notificación a Discord
-def send_discord_notification(username, position, color):
-    message = {
-        "content": f"{username} pintó en la posición {position} con el color {color}."
-    }
+def send_discord_notification(username, user_id, position, color):
+    if user_id:
+        message = {
+            "content": f"dboq ({user_id}) pintó en la posición {position} con el color {color}."
+        }
+    else:
+        message = {
+            "content": f"usuario (Invitado) pintó en la posición {position} con el color {color}."
+        }
     requests.post(DISCORD_WEBHOOK_URL, json=message)
 
 # Función principal
@@ -101,9 +106,11 @@ def main():
         # Botón para pintar
         if st.button("Pintar"):
             st.session_state.canvas[selected_row, selected_col] = selected_color
-            position = f"{selected_row},{selected_col}"
-            send_discord_notification(st.session_state.username, position, color)  # Notificación a Discord
+            position = f"{chr(selected_col + 65)}{selected_row + 1}"  # Convertir a A1, B2, etc.
+            user_id = st.session_state.user['id'] if 'user' in st.session_state else None
+            send_discord_notification(st.session_state.username, user_id, position, color)
 
+    # Dibujar el lienzo
     draw_canvas()
 
 if __name__ == "__main__":
