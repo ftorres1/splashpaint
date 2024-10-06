@@ -1,19 +1,51 @@
 import streamlit as st
 import requests
 
-def main():
-    # Comprobar si el usuario ya ha iniciado sesión
-    if "user" not in st.session_state:
-        # Mostrar el botón de inicio de sesión
-        st.button("Iniciar sesión con Discord", on_click=login_with_discord)
-
-    # Aquí va el resto de tu aplicación
-
+# Función para generar la URL de autenticación
 def login_with_discord():
-    # URL de autorización de Discord
-    discord_auth_url = f"https://discord.com/api/oauth2/authorize?client_id={st.secrets['discord']['client_id']}&redirect_uri=http://localhost:8501/callback&response_type=code&scope=identify"
+    discord_auth_url = (
+        f"https://discord.com/api/oauth2/authorize"
+        f"?client_id={st.secrets['discord']['client_id']}"
+        f"&redirect_uri=https://splashplace.streamlit.app/callback"
+        f"&response_type=code"
+        f"&scope=identify"
+    )
     st.write("Por favor, inicia sesión en Discord haciendo clic en el siguiente enlace:")
     st.write(f"[Iniciar sesión]({discord_auth_url})")
 
-if __name__ == "__main__":
-    main()
+# Función para manejar el callback
+def handle_callback():
+    if "code" in st.query_params:
+        code = st.query_params["code"]
+        # Intercambia el código por un token de acceso
+        token_url = "https://discord.com/api/oauth2/token"
+        data = {
+            "client_id": st.secrets["discord"]["client_id"],
+            "client_secret": st.secrets["discord"]["client_secret"],
+            "grant_type": "authorization_code",
+            "code": code,
+            "redirect_uri": "https://splashplace.streamlit.app/callback"
+        }
+        response = requests.post(token_url, data=data)
+        if response.ok:
+            access_token = response.json().get("access_token")
+            # Obtén la información del usuario
+            user_info_url = "https://discord.com/api/users/@me"
+            headers = {"Authorization": f"Bearer {access_token}"}
+            user_info = requests.get(user_info_url, headers=headers)
+            if user_info.ok:
+                st.session_state.user = user_info.json()
+                st.success("Has iniciado sesión correctamente.")
+            else:
+                st.error("No se pudo obtener información del usuario.")
+        else:
+            st.error("Error al intercambiar el código por un token.")
+
+# Verifica si el usuario ya está autenticado o si se requiere iniciar sesión
+if "user" not in st.session_state:
+    login_with_discord()
+else:
+    st.write("Ya has iniciado sesión como:", st.session_state.user["username"])
+
+# Maneja el callback
+handle_callback()
