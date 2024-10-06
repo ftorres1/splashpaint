@@ -59,6 +59,7 @@ def send_discord_notification(username, user_id, position, color):
 
 # Función para verificar si el usuario es administrador
 def is_admin(user):
+    st.write(st.secrets)  # Añade esto para ver qué secretos están disponibles
     admin_users = st.secrets["admin"]["users"]
     return user['username'] in admin_users
 
