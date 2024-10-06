@@ -11,6 +11,9 @@ DISCORD_CLIENT_SECRET = os.getenv('DISCORD_CLIENT_SECRET')
 DISCORD_REDIRECT_URI = 'https://splashplace.streamlit.app/'  # Ajusta esto con tu URL de Streamlit Cloud
 DISCORD_API_URL = 'https://discord.com/api/v10'
 
+# Webhook de Discord
+DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1292564820016627855/akZ08vnkPWqHu-__UAxzlgB2f4T6ogyxkK8JoV8qhkB5hYz0i0zQ076JW9NI0Tow7sFe'
+
 # Inicializamos el lienzo como una matriz de colores (en blanco)
 GRID_SIZE = 20
 if 'canvas' not in st.session_state:
@@ -41,6 +44,13 @@ def get_user_info(access_token):
     headers = {'Authorization': f'Bearer {access_token}'}
     response = requests.get(f'{DISCORD_API_URL}/users/@me', headers=headers)
     return response.json()
+
+# Función para enviar notificación a Discord
+def send_discord_notification(user, position, color):
+    message = {
+        "content": f"{user['username']} pintó en la posición {position} con el color {color}."
+    }
+    requests.post(DISCORD_WEBHOOK_URL, json=message)
 
 # Función principal
 def main():
@@ -86,6 +96,9 @@ def main():
         # Lógica para pintar en el lienzo
         if st.button("Pintar"):
             st.session_state.canvas[row_idx, col_idx] = selected_color
+            position = f"{selected_row}{selected_col}"
+            color_hex = color
+            send_discord_notification(st.session_state.user, position, color_hex)  # Notificación a Discord
             st.success("Pintura realizada con éxito.")
 
         draw_canvas(st.session_state.canvas)
