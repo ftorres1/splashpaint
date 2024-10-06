@@ -53,7 +53,7 @@ def send_discord_notification(username, user_id, position, color):
         }
     else:
         message = {
-            "content": f"{username} pintó en la posición {position} con el color {color}."
+            "content": f"usuario ({username}) pintó en la posición {position} con el color {color}."
         }
     requests.post(DISCORD_WEBHOOK_URL, json=message)
 
@@ -67,16 +67,16 @@ def main():
     st.sidebar.title("Menú")
     option = st.sidebar.radio("Selecciona una opción", ["Pintar", "Administración"])
 
-    query_params = st.experimental_get_query_params()  # Uso actualizado para obtener los parámetros de consulta
+    query_params = st.query_params  # Uso actualizado para obtener los parámetros de consulta
     if 'code' in query_params:
-        code = query_params['code'][0]
+        code = query_params['code']
         token_data = get_access_token(code)
         access_token = token_data.get('access_token')
 
         if access_token:
             user_info = get_user_info(access_token)
             st.session_state.user = user_info
-            st.experimental_set_query_params()  # Limpiar los parámetros de consulta después del inicio de sesión
+            st.query_params.clear()  # Limpiar los parámetros de consulta después del inicio de sesión
         else:
             st.error("Error al obtener el token de acceso.")
 
@@ -99,6 +99,8 @@ def main():
         st.sidebar.write(f"Bienvenido, {st.session_state.user['username']}!")
         st.session_state.username = st.session_state.user['username']
 
+    draw_canvas()  # Mostrar el lienzo para todos
+
     if option == "Pintar":
         # Lógica de pintura aquí
         color = st.color_picker('Selecciona un color', '#000000')
@@ -108,7 +110,7 @@ def main():
         position = st.selectbox('Selecciona la posición para pintar', [f"{chr(i)}{j+1}" for i in range(ord('A'), ord('A') + GRID_SIZE) for j in range(GRID_SIZE)])
 
         # Asegurarnos de que el usuario tenga un nombre antes de permitir pintar
-        if 'username' in st.session_state and st.session_state.username:
+        if st.session_state.username:
             x = ord(position[0]) - ord('A')  # Convertir letra a número
             y = int(position[1]) - 1  # Convertir número de fila
             if st.button("Pintar"):
@@ -122,13 +124,6 @@ def main():
         if 'user' in st.session_state and is_admin(st.session_state.user):
             st.subheader("Panel de Administración")
             # Aquí puedes añadir opciones para el panel de administración
-    
-    elif option == "Administración":
-        if 'user' in st.session_state and is_admin(st.session_state.user):
-            st.write("Panel de Administración")
-            # Implementar funcionalidades administrativas aquí
-        else:
-            st.error("No tienes permiso para acceder a esta sección.")
 
 if __name__ == "__main__":
     main()
