@@ -13,7 +13,7 @@ def load_canvas():
     if os.path.exists(DATABASE_FILE):
         with open(DATABASE_FILE, 'r') as f:
             data = json.load(f)
-            return np.array(data['canvas'])
+            return np.array(data['canvas'], dtype=float)
     else:
         return np.ones((GRID_SIZE, GRID_SIZE, 3))  # Blanco (1,1,1 en RGB)
 
