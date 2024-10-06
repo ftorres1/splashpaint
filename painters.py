@@ -3,6 +3,7 @@ import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
 import json
+import time
 
 # Definimos el tamaño del lienzo
 GRID_SIZE = 20
@@ -39,6 +40,17 @@ def paint_page():
     st.title("Pinta en el lienzo")
     st.write("Antes de jugar, por favor ve al menú e inicia sesión o registra tu nombre (en dispositivos móviles, toca la flecha de arriba en el lado izquierdo de tu pantalla).")
 
+    # Inicializamos el cooldown
+    COOLDOWN_PERIOD = 5  # en segundos
+
+    # Verificamos si el tiempo de la última acción de pintura está almacenado
+    if 'last_paint_time' not in st.session_state:
+        st.session_state.last_paint_time = 0  # Inicializa el tiempo si no existe
+
+    # Mostrar tiempo restante del cooldown
+    current_time = time.time()
+    time_since_last_paint = current_time - st.session_state.last_paint_time
+
     # Seleccionar color
     color = st.color_picker('Elige un color', '#000000')
 
@@ -48,17 +60,24 @@ def paint_page():
 
     # Lógica para pintar en el lienzo
     if st.button('Pintar'):
-        # Convertimos fila y columna a índices de la matriz
-        x = columna - 1  # Ajustar a 0-index
-        y = fila - 1     # Ajustar a 0-index
+        if time_since_last_paint < COOLDOWN_PERIOD:
+            remaining_time = COOLDOWN_PERIOD - time_since_last_paint
+            st.warning(f"Debes esperar {remaining_time:.1f} segundos antes de pintar nuevamente.")
+        else:
+            # Convertimos fila y columna a índices de la matriz
+            x = columna - 1  # Ajustar a 0-index
+            y = fila - 1     # Ajustar a 0-index
 
-        # Cambiamos el color del píxel seleccionado
-        selected_color = np.array([int(color.lstrip('#')[i:i + 2], 16) for i in (0, 2, 4)]) / 255
-        st.session_state.canvas[y, x] = selected_color
-        
-        # Guardar el estado del lienzo después de pintar
-        save_canvas()
-        
+            # Cambiamos el color del píxel seleccionado
+            selected_color = np.array([int(color.lstrip('#')[i:i + 2], 16) for i in (0, 2, 4)]) / 255
+            st.session_state.canvas[y, x] = selected_color
+            
+            # Guardar el estado del lienzo después de pintar
+            save_canvas()
+            
+            # Actualizar el tiempo de la última acción de pintura
+            st.session_state.last_paint_time = current_time
+
     # Mostrar el lienzo
     draw_canvas()
 
