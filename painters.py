@@ -1,103 +1,134 @@
+import os
 import streamlit as st
 import numpy as np
+import matplotlib.pyplot as plt
 import requests
-import time
+from urllib.parse import urlencode
 
-# Configuración inicial
-st.set_page_config(page_title="SplashPlace", layout="wide")
+# Configuración de Discord
+DISCORD_CLIENT_ID = os.getenv('DISCORD_CLIENT_ID')
+DISCORD_CLIENT_SECRET = os.getenv('DISCORD_CLIENT_SECRET')
+DISCORD_REDIRECT_URI = 'https://splashplace.streamlit.app/'  # Ajusta esto con tu URL de Streamlit Cloud
+DISCORD_API_URL = 'https://discord.com/api/v10'
 
-# Función para enviar notificaciones a Discord
-def send_discord_notification(username, position, color):
-    webhook_url = "https://discord.com/api/webhooks/1292564820016627855/akZ08vnkPWqHu-__UAxzlgB2f4T6ogyxkK8JoV8qhkB5hYz0i0zQ076JW9NI0Tow7sFe"
-    content = f"{username} pintó en la posición {position} con el color {color}."
-    requests.post(webhook_url, json={"content": content})
+# Webhook de Discord
+DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1292564820016627855/akZ08vnkPWqHu-__UAxzlgB2f4T6ogyxkK8JoV8qhkB5hYz0i0zQ076JW9NI0Tow7sFe'
 
-# Verifica si el usuario está autenticado
-if "user" not in st.session_state:
-    st.session_state.user = None
-
-# Función para iniciar sesión con Discord
-def login_with_discord():
-    discord_auth_url = (
-        f"https://discord.com/api/oauth2/authorize"
-        f"?client_id={st.secrets['discord']['client_id']}"
-        f"&redirect_uri=https://splashplace.streamlit.app/callback"
-        f"&response_type=code"
-        f"&scope=identify"
-    )
-    st.write("Por favor, inicia sesión en Discord haciendo clic en el siguiente enlace:")
-    st.write(f"[Iniciar sesión]({discord_auth_url})")
-
-# Manejo del callback
-def handle_callback():
-    if "code" in st.query_params:
-        code = st.query_params["code"]
-        token_url = "https://discord.com/api/oauth2/token"
-        data = {
-            "client_id": st.secrets["discord"]["client_id"],
-            "client_secret": st.secrets["discord"]["client_secret"],
-            "grant_type": "authorization_code",
-            "code": code,
-            "redirect_uri": "https://splashplace.streamlit.app/callback"
-        }
-        response = requests.post(token_url, data=data)
-        if response.ok:
-            access_token = response.json().get("access_token")
-            user_info_url = "https://discord.com/api/users/@me"
-            headers = {"Authorization": f"Bearer {access_token}"}
-            user_info = requests.get(user_info_url, headers=headers)
-            if user_info.ok:
-                st.session_state.user = user_info.json()
-                st.success("Has iniciado sesión correctamente.")
-            else:
-                st.error("No se pudo obtener información del usuario.")
-        else:
-            st.error("Error al intercambiar el código por un token.")
-
-# Manejo del inicio de sesión y callback
-if st.session_state.user is None:
-    login_with_discord()
-else:
-    st.write("Ya has iniciado sesión como:", st.session_state.user["username"])
-    handle_callback()
-
-# Configuración del lienzo
-canvas_size = (16, 16)  # Dimensiones del lienzo
+# Inicializamos el lienzo como una matriz de colores (en blanco)
+GRID_SIZE = 20
 if 'canvas' not in st.session_state:
-    st.session_state.canvas = np.zeros(canvas_size, dtype=int)
+    st.session_state.canvas = np.ones((GRID_SIZE, GRID_SIZE, 3))  # Blanco (1,1,1 en RGB)
 
-# Selección de color
-color = st.color_picker("Selecciona un color", "#000000")
+# Función para mostrar el lienzo
+def draw_canvas():
+    fig, ax = plt.subplots(figsize=(6, 6))
+    ax.imshow(st.session_state.canvas, interpolation='nearest')
+    ax.set_xticks([])
+    ax.set_yticks([])
+    st.pyplot(fig)
 
-# Pintar en el lienzo
-if st.button("Pintar"):
-    if st.session_state.user is None or 'username' not in st.session_state.user:
-        st.error("Por favor, ingresa tu nombre de usuario o inicia sesión con Discord.")
+# Función para obtener el token de acceso
+def get_access_token(code):
+    payload = {
+        'client_id': DISCORD_CLIENT_ID,
+        'client_secret': DISCORD_CLIENT_SECRET,
+        'grant_type': 'authorization_code',
+        'code': code,
+        'redirect_uri': DISCORD_REDIRECT_URI,
+    }
+    response = requests.post(f'{DISCORD_API_URL}/oauth2/token', data=payload)
+    return response.json()
+
+# Función para obtener el usuario de Discord
+def get_user_info(access_token):
+    headers = {'Authorization': f'Bearer {access_token}'}
+    response = requests.get(f'{DISCORD_API_URL}/users/@me', headers=headers)
+    return response.json()
+
+# Función para enviar notificación a Discord
+def send_discord_notification(username, user_id, position, color):
+    if user_id:
+        message = {
+            "content": f"dboq ({user_id}) pintó en la posición {position} con el color {color}."
+        }
     else:
-        position = st.selectbox("Selecciona la posición", [f"{chr(65 + i)}{j + 1}" for j in range(canvas_size[0]) for i in range(canvas_size[1])])
-        selected_row = ord(position[0]) - 65
-        selected_col = int(position[1]) - 1
+        message = {
+            "content": f"{username} pintó en la posición {position} con el color {color}."
+        }
+    requests.post(DISCORD_WEBHOOK_URL, json=message)
 
-        # Actualizar el lienzo
-        st.session_state.canvas[selected_row, selected_col] = color
-
-        # Enviar notificación a Discord
-        send_discord_notification(st.session_state.user["username"], position, color)
-
-# Mostrar el lienzo
-st.write("Mural:")
-for row in range(canvas_size[0]):
-    cols = []
-    for col in range(canvas_size[1]):
-        pixel_color = st.session_state.canvas[row, col]
-        cols.append(st.color_picker("", pixel_color, key=f"color_{row}_{col}"))
-    st.columns(cols)
-
-# Panel de administración
+# Función para verificar si el usuario es administrador
 def is_admin(user):
     admin_users = st.secrets["admin"]["users"]
-    return user["username"] in admin_users
+    return user['username'] in admin_users
 
-if is_admin(st.session_state.user):
-    st.write("Panel de Administración")
-    # Aquí puedes agregar más funcionalidades de administración
+# Función principal
+def main():
+    st.sidebar.title("Menú")
+    option = st.sidebar.radio("Selecciona una opción", ["Pintar", "Administración"])
+
+    query_params = st.experimental_get_query_params()  # Uso actualizado para obtener los parámetros de consulta
+    if 'code' in query_params:
+        code = query_params['code'][0]
+        token_data = get_access_token(code)
+        access_token = token_data.get('access_token')
+
+        if access_token:
+            user_info = get_user_info(access_token)
+            st.session_state.user = user_info
+            st.experimental_set_query_params()  # Limpiar los parámetros de consulta después del inicio de sesión
+        else:
+            st.error("Error al obtener el token de acceso.")
+
+    # Permitir que los usuarios ingresen su nombre de usuario
+    if 'user' not in st.session_state:
+        st.sidebar.subheader("Identifícate")
+        username = st.sidebar.text_input("Ingresa tu nombre de usuario", "")
+        st.session_state.username = username
+
+        # Opción de iniciar sesión con Discord
+        params = {
+            'client_id': DISCORD_CLIENT_ID,
+            'redirect_uri': DISCORD_REDIRECT_URI,
+            'response_type': 'code',
+            'scope': 'identify',
+        }
+        auth_url = f'https://discord.com/api/oauth2/authorize?{urlencode(params)}'
+        st.sidebar.markdown(f"[Iniciar sesión con Discord]({auth_url})")
+    else:
+        st.sidebar.write(f"Bienvenido, {st.session_state.user['username']}!")
+        st.session_state.username = st.session_state.user['username']
+
+    if option == "Pintar":
+        # Lógica de pintura aquí
+        color = st.color_picker('Selecciona un color', '#000000')
+        selected_color = np.array([int(color.lstrip('#')[i:i+2], 16) for i in (0, 2, 4)]) / 255
+
+        # Selección del pixel a pintar
+        position = st.selectbox("Selecciona una posición", [f"{chr(65 + i)}{j + 1}" for j in range(GRID_SIZE) for i in range(GRID_SIZE)])
+
+        if st.button("Pintar"):
+            if st.session_state.username == "":
+                st.error("Por favor, ingresa tu nombre de usuario o inicia sesión con Discord.")
+            else:
+                # Convertir la posición en índices
+                selected_row = ord(position[0]) - 65
+                selected_col = int(position[1]) - 1
+
+                # Pintar en el lienzo
+                st.session_state.canvas[selected_row, selected_col] = selected_color
+
+                # Enviar notificación a Discord
+                send_discord_notification(st.session_state.username, st.session_state.user['id'], position, color)
+
+        draw_canvas()
+
+    elif option == "Administración":
+        if is_admin(st.session_state.user):
+            st.write("Panel de Administración")
+            # Aquí puedes agregar funcionalidades de administración
+        else:
+            st.error("No tienes permisos de administrador.")
+
+if __name__ == "__main__":
+    main()
