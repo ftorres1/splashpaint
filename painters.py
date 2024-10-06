@@ -69,11 +69,11 @@ def paint_page():
         # Verificar si el usuario está en cooldown inicial
         if time_since_initial_cooldown < INITIAL_COOLDOWN_PERIOD:
             remaining_time = INITIAL_COOLDOWN_PERIOD - time_since_initial_cooldown
-            st.warning(f"Debes esperar {remaining_time:.1f} segundos antes de pintar.")
+            st.error(f"Debes esperar {remaining_time:.1f} segundos antes de pintar.")
         # Verificar si el usuario está en cooldown después de pintar
         elif time_since_last_paint < COOLDOWN_PERIOD:
             remaining_time = COOLDOWN_PERIOD - time_since_last_paint
-            st.warning(f"Debes esperar {remaining_time:.1f} segundos antes de pintar nuevamente.")
+            st.error(f"Debes esperar {remaining_time:.1f} segundos antes de pintar nuevamente.")
         else:
             # Convertimos fila y columna a índices de la matriz
             x = columna - 1  # Ajustar a 0-index
@@ -82,6 +82,8 @@ def paint_page():
             # Cambiamos el color del píxel seleccionado
             selected_color = np.array([int(color.lstrip('#')[i:i + 2], 16) for i in (0, 2, 4)]) / 255
             st.session_state.canvas[y, x] = selected_color
+
+            st.warning("¡El Pixel se ha colocado!")
             
             # Guardar el estado del lienzo después de pintar
             save_canvas()
