@@ -37,6 +37,7 @@ def draw_canvas():
 # Función para la página de pintura
 def paint_page():
     st.title("Pinta en el lienzo")
+    st.write("Antes de jugar, por favor ve al menú e inicia sesión o registra tu nombre (en dispositivos móviles, toca la flecha de arriba en el lado izquierdo de tu pantalla).")
 
     # Seleccionar color
     color = st.color_picker('Elige un color', '#000000')
@@ -81,12 +82,12 @@ def home_page():
 # Función principal
 def main():
     # Menú de navegación
-    menu = st.sidebar.selectbox("Selecciona una opción", ["Pintar", "Inicio"])
+    menu = st.sidebar.selectbox("Visita una página", ["Inicio", "Pintar"])
 
-    if menu == "Pintar":
-        paint_page()
-    elif menu == "Inicio":
+    if menu == "Inicio":
         home_page()
+    elif menu == "Pintar":
+        paint_page()
 
 # Ejecutamos la aplicación
 if __name__ == "__main__":
