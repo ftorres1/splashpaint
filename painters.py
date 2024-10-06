@@ -96,12 +96,14 @@ def main():
         # Lógica para pintar en el lienzo
         if st.button("Pintar"):
             st.session_state.canvas[row_idx, col_idx] = selected_color
-            position = f"{selected_row}{selected_col}"
-            color_hex = color
-            send_discord_notification(st.session_state.user, position, color_hex)  # Notificación a Discord
-            st.success("Pintura realizada con éxito.")
+            
+            # Enviar notificación a Discord
+            send_discord_notification(st.session_state.user, f"{selected_row}{selected_col}", color)
 
-        draw_canvas(st.session_state.canvas)
+            draw_canvas(st.session_state.canvas)  # Redibujar el lienzo
+
+    elif option == "Administración":
+        st.write("Panel de administración (aquí puedes agregar tus funciones de administración).")
 
 if __name__ == "__main__":
     main()
