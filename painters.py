@@ -2,11 +2,29 @@ import os
 import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
+import json
+
+# Definimos el tamaño del lienzo
+GRID_SIZE = 20
+DATABASE_FILE = 'canvas_state.json'
+
+# Función para cargar el estado del lienzo desde el archivo JSON
+def load_canvas():
+    if os.path.exists(DATABASE_FILE):
+        with open(DATABASE_FILE, 'r') as f:
+            data = json.load(f)
+            return np.array(data['canvas'])
+    else:
+        return np.ones((GRID_SIZE, GRID_SIZE, 3))  # Blanco (1,1,1 en RGB)
+
+# Función para guardar el estado del lienzo en el archivo JSON
+def save_canvas():
+    with open(DATABASE_FILE, 'w') as f:
+        json.dump({'canvas': st.session_state.canvas.tolist()}, f)
 
 # Inicializamos el lienzo como una matriz de colores (en blanco)
-GRID_SIZE = 20
 if 'canvas' not in st.session_state:
-    st.session_state.canvas = np.ones((GRID_SIZE, GRID_SIZE, 3))  # Blanco (1,1,1 en RGB)
+    st.session_state.canvas = load_canvas()
 
 # Función para mostrar el lienzo
 def draw_canvas():
@@ -35,6 +53,9 @@ def paint_page():
 
         # Cambiamos el color del píxel seleccionado
         st.session_state.canvas[y, x] = np.array([int(color.lstrip('#')[i:i + 2], 16) for i in (0, 2, 4)]) / 255
+
+        # Guardar el estado del lienzo después de pintar
+        save_canvas()
         
     # Mostrar el lienzo
     draw_canvas()
