@@ -52,8 +52,9 @@ def paint_page():
         y = fila - 1     # Ajustar a 0-index
 
         # Cambiamos el color del píxel seleccionado
-        st.session_state.canvas[y, x] = np.array([int(color.lstrip('#')[i:i + 2], 16) for i in (0, 2, 4)]) / 255
-
+        selected_color = np.array([int(color.lstrip('#')[i:i + 2], 16) for i in (0, 2, 4)]) / 255
+        st.session_state.canvas[y, x] = selected_color
+        
         # Guardar el estado del lienzo después de pintar
         save_canvas()
         
