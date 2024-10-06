@@ -24,7 +24,7 @@ def handle_callback():
             "client_secret": st.secrets["discord"]["client_secret"],
             "grant_type": "authorization_code",
             "code": code,
-            "redirect_uri": "https://splashplace.streamlit.app/callback"
+            "redirect_uri": "https://splashplace.streamlit.app/"
         }
         response = requests.post(token_url, data=data)
         if response.ok:
