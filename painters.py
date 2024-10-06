@@ -27,9 +27,6 @@ def main():
     fila = st.selectbox('Selecciona la fila (1-20)', range(1, GRID_SIZE + 1))
     columna = st.selectbox('Selecciona la columna (1-20)', range(1, GRID_SIZE + 1))
 
-    # Mostrar el lienzo
-    draw_canvas()
-
     # Lógica para pintar en el lienzo
     if st.button('Pintar'):
         # Convertimos fila y columna a índices de la matriz
@@ -41,6 +38,9 @@ def main():
 
         # Volver a mostrar el lienzo actualizado
         draw_canvas()
+        
+    # Mostrar el lienzo
+    draw_canvas()
 
 # Ejecutamos la aplicación
 if __name__ == "__main__":
