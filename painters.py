@@ -104,8 +104,7 @@ def main():
             position = f"{selected_row},{selected_col}"
             send_discord_notification(st.session_state.username, position, color)  # Notificación a Discord
 
-        draw_canvas()  # Mostrar el lienzo después de pintar
+    draw_canvas()
 
-# Ejecución de la aplicación
 if __name__ == "__main__":
     main()
