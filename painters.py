@@ -20,9 +20,9 @@ if 'canvas' not in st.session_state:
     st.session_state.canvas = np.ones((GRID_SIZE, GRID_SIZE, 3))  # Blanco (1,1,1 en RGB)
 
 # Función para mostrar el lienzo
-def draw_canvas(canvas):
+def draw_canvas():
     fig, ax = plt.subplots(figsize=(6, 6))
-    ax.imshow(canvas, interpolation='nearest')
+    ax.imshow(st.session_state.canvas, interpolation='nearest')
     ax.set_xticks([])
     ax.set_yticks([])
     st.pyplot(fig)
@@ -95,15 +95,10 @@ def main():
 
         # Lógica para pintar en el lienzo
         if st.button("Pintar"):
-            st.session_state.canvas[row_idx, col_idx] = selected_color
-            
-            # Enviar notificación a Discord
-            send_discord_notification(st.session_state.user, f"{selected_row}{selected_col}", color)
+            st.session_state.canvas[row_idx, col_idx] = selected_color  # Actualizar el lienzo
+            send_discord_notification(st.session_state.user, f"{selected_row}{selected_col}", color)  # Notificación a Discord
 
-            draw_canvas(st.session_state.canvas)  # Redibujar el lienzo
-
-    elif option == "Administración":
-        st.write("Panel de administración (aquí puedes agregar tus funciones de administración).")
+        draw_canvas()  # Mostrar el lienzo actualizado
 
 if __name__ == "__main__":
     main()
