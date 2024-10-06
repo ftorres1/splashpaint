@@ -86,7 +86,7 @@ def main():
     if menu == "Pintar":
         paint_page()
     elif menu == "Inicio":
-        home_page(
+        home_page()
 
 # Ejecutamos la aplicación
 if __name__ == "__main__":
