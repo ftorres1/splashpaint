@@ -57,6 +57,11 @@ def send_discord_notification(username, user_id, position, color):
         }
     requests.post(DISCORD_WEBHOOK_URL, json=message)
 
+# Función para verificar si el usuario es administrador
+def is_admin(user):
+    admin_users = st.secrets["admin"]["users"]
+    return user['username'] in admin_users
+
 # Función principal
 def main():
     st.sidebar.title("Menú")
@@ -95,27 +100,28 @@ def main():
         st.session_state.username = st.session_state.user['username']
 
     if option == "Pintar":
-        st.title('Mural de 1Splash')
+        # Lógica de pintura aquí
         color = st.color_picker('Selecciona un color', '#000000')
         selected_color = np.array([int(color.lstrip('#')[i:i+2], 16) for i in (0, 2, 4)]) / 255
 
-        # Selección del pixel
-        selected_row = st.number_input("Fila (0 a 19)", min_value=0, max_value=GRID_SIZE - 1, step=1)
-        selected_col = st.number_input("Columna (0 a 19)", min_value=0, max_value=GRID_SIZE - 1, step=1)
+        # Selección del pixel a pintar
+        position = st.selectbox("Selecciona la posición a pintar", [(chr(i) + str(j + 1)) for i in range(65, 65 + GRID_SIZE) for j in range(GRID_SIZE)])
 
         # Botón para pintar
         if st.button("Pintar"):
-            if st.session_state.username:  # Asegurarse de que el usuario tenga un nombre
-                st.session_state.canvas[selected_row, selected_col] = selected_color
-                position = f"{chr(selected_col + 65)}{selected_row + 1}"  # Convertir a A1, B2, etc.
-                user_id = st.session_state.user['id'] if 'user' in st.session_state else None
-
-                # Enviar notificación a Discord
-                send_discord_notification(st.session_state.username, user_id, position, color)
-
-                st.success(f"Pintaste en la posición {position} con el color {color}.")
+            if st.session_state.username:
+                # Convertir la posición seleccionada a índices de la matriz
+                row = int(position[1:]) - 1
+                col = ord(position[0]) - 65
+                st.session_state.canvas[row, col] = selected_color
+                send_discord_notification(st.session_state.username, st.session_state.user.get('id'), position, color)
             else:
-                st.error("Debes ingresar un nombre de usuario o iniciar sesión para pintar.")
+                st.error("Por favor, ingresa tu nombre de usuario o inicia sesión con Discord para pintar.")
+
+    if option == "Administración" and 'user' in st.session_state and is_admin(st.session_state.user):
+        st.subheader("Panel de Administración")
+        # Implementa aquí las funciones de administración que desees
+        st.write("Bienvenido al panel de administración. Aquí puedes gestionar la aplicación.")
 
     draw_canvas()
 
