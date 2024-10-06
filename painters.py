@@ -105,30 +105,28 @@ def main():
         selected_color = np.array([int(color.lstrip('#')[i:i+2], 16) for i in (0, 2, 4)]) / 255
 
         # Selección del pixel a pintar
-        position = st.selectbox("Selecciona una posición", [f"{chr(65 + i)}{j + 1}" for j in range(GRID_SIZE) for i in range(GRID_SIZE)])
-
+        position = st.selectbox("Selecciona la posición para pintar", [(f"{chr(65 + i)}{j + 1}") for i in range(GRID_SIZE) for j in range(GRID_SIZE)])
         if st.button("Pintar"):
-            if st.session_state.username == "":
-                st.error("Por favor, ingresa tu nombre de usuario o inicia sesión con Discord.")
+            if 'user' in st.session_state:
+                user_id = st.session_state.user['id']
+                username = st.session_state.user['username']
             else:
-                # Convertir la posición en índices
-                selected_row = ord(position[0]) - 65
-                selected_col = int(position[1]) - 1
-
-                # Pintar en el lienzo
-                st.session_state.canvas[selected_row, selected_col] = selected_color
-
-                # Enviar notificación a Discord
-                send_discord_notification(st.session_state.username, st.session_state.user['id'], position, color)
-
-        draw_canvas()
-
+                user_id = None
+                username = st.session_state.username
+            
+            # Pintar el pixel en el lienzo
+            x, y = position[0] - 'A', int(position[1]) - 1
+            st.session_state.canvas[y, x] = selected_color
+            
+            # Enviar notificación a Discord
+            send_discord_notification(username, user_id, position, color)
+            draw_canvas()  # Redibujar el lienzo
     elif option == "Administración":
-        if is_admin(st.session_state.user):
+        if 'user' in st.session_state and is_admin(st.session_state.user):
             st.write("Panel de Administración")
-            # Aquí puedes agregar funcionalidades de administración
+            # Implementar funcionalidades administrativas aquí
         else:
-            st.error("No tienes permisos de administrador.")
+            st.error("No tienes permiso para acceder a esta sección.")
 
 if __name__ == "__main__":
     main()
