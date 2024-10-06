@@ -105,22 +105,24 @@ def main():
         selected_color = np.array([int(color.lstrip('#')[i:i+2], 16) for i in (0, 2, 4)]) / 255
 
         # Selección del pixel a pintar
-        position = st.selectbox("Selecciona la posición para pintar", [(f"{chr(65 + i)}{j + 1}") for i in range(GRID_SIZE) for j in range(GRID_SIZE)])
-        if st.button("Pintar"):
-            if 'user' in st.session_state:
-                user_id = st.session_state.user['id']
-                username = st.session_state.user['username']
-            else:
-                user_id = None
-                username = st.session_state.username
-            
-            # Pintar el pixel en el lienzo
-            x, y = position[0] - 'A', int(position[1]) - 1
-            st.session_state.canvas[y, x] = selected_color
-            
-            # Enviar notificación a Discord
-            send_discord_notification(username, user_id, position, color)
-            draw_canvas()  # Redibujar el lienzo
+        position = st.selectbox('Selecciona la posición para pintar', [f"{chr(i)}{j+1}" for i in range(ord('A'), ord('A') + GRID_SIZE) for j in range(GRID_SIZE)])
+
+        # Asegurarnos de que el usuario tenga un nombre antes de permitir pintar
+        if 'username' in st.session_state and st.session_state.username:
+            x = ord(position[0]) - ord('A')  # Convertir letra a número
+            y = int(position[1]) - 1  # Convertir número de fila
+            if st.button("Pintar"):
+                st.session_state.canvas[x, y] = selected_color
+                send_discord_notification(st.session_state.username, st.session_state.user.get('id'), position, color)
+                st.success(f"Pintaste en {position} con el color {color}.")
+        else:
+            st.warning("Debes ingresar un nombre de usuario o iniciar sesión para pintar.")
+        
+    if option == "Administración":
+        if 'user' in st.session_state and is_admin(st.session_state.user):
+            st.subheader("Panel de Administración")
+            # Aquí puedes añadir opciones para el panel de administración
+    
     elif option == "Administración":
         if 'user' in st.session_state and is_admin(st.session_state.user):
             st.write("Panel de Administración")
