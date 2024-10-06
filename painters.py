@@ -20,15 +20,15 @@ def draw_canvas():
 def main():
     st.title("Pinta en el lienzo")
 
-    # Mostrar el lienzo
-    draw_canvas()
-
     # Seleccionar color
     color = st.color_picker('Elige un color', '#000000')
 
     # Seleccionar fila y columna
     fila = st.selectbox('Selecciona la fila (1-20)', range(1, GRID_SIZE + 1))
     columna = st.selectbox('Selecciona la columna (1-20)', range(1, GRID_SIZE + 1))
+
+    # Mostrar el lienzo
+    draw_canvas()
 
     # Lógica para pintar en el lienzo
     if st.button('Pintar'):
@@ -39,8 +39,8 @@ def main():
         # Cambiamos el color del píxel seleccionado
         st.session_state.canvas[y, x] = np.array([int(color.lstrip('#')[i:i + 2], 16) for i in (0, 2, 4)]) / 255
 
-    # Mostrar el lienzo actualizado (sin duplicar)
-    draw_canvas()
+        # Volver a mostrar el lienzo actualizado
+        draw_canvas()
 
 # Ejecutamos la aplicación
 if __name__ == "__main__":
