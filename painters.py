@@ -81,7 +81,7 @@ def home_page():
 # Función principal
 def main():
     # Menú de navegación
-    menu = st.sidebar.selectbox("Selecciona una opción", ["Inicio", "Pintar"])
+    menu = st.sidebar.selectbox("Selecciona una opción", ["Pintar", "Inicio"])
 
     if menu == "Pintar":
         paint_page()
