@@ -47,14 +47,9 @@ def get_user_info(access_token):
 
 # Función para enviar notificación a Discord
 def send_discord_notification(username, user_id, position, color):
-    if user_id:
-        message = {
-            "content": f"{username} ({user_id}) pintó en la posición {position} con el color {color}."
-        }
-    else:
-        message = {
-            "content": f"{username} pintó en la posición {position} con el color {color}."
-        }
+    message = {
+        "content": f"{username} ({user_id}) pintó en la posición {position} con el color {color}."
+    }
     requests.post(DISCORD_WEBHOOK_URL, json=message)
 
 # Función para verificar si el usuario es administrador
@@ -98,38 +93,31 @@ def main():
         auth_url = f'https://discord.com/api/oauth2/authorize?{urlencode(params)}'
         st.sidebar.markdown(f"[Iniciar sesión con Discord]({auth_url})")
     else:
-        # Solo mostrar el nombre de usuario si ha iniciado sesión o ha ingresado su nombre
-        username = st.session_state.username
-        user = st.session_state.get('user', {})
-        
-        st.sidebar.write(f"Bienvenido, {username}!")
+        st.sidebar.write(f"Bienvenido, {st.session_state.user['username']}!")
 
-        if 'id' in user:
-            user_id = user['id']
-        else:
-            user_id = None
+    # Mostrar el lienzo
+    draw_canvas()
 
-        # Mostrar el lienzo
-        draw_canvas()
-
-        # Interfaz de pintura
+    if option == "Pintar":
+        # Selección del color
         color = st.color_picker('Selecciona un color', '#000000')
         selected_color = np.array([int(color.lstrip('#')[i:i+2], 16) for i in (0, 2, 4)]) / 255
 
         # Selección del pixel a pintar
-        position = st.selectbox("Selecciona la posición para pintar", [f"{chr(65 + j)}{i + 1}" for i in range(GRID_SIZE) for j in range(GRID_SIZE)])
-        
-        # Verificar la selección de posición y color antes de pintar
+        position = st.selectbox("Selecciona la posición para pintar", [f"{chr(col + 65)}{row + 1}" for row in range(GRID_SIZE) for col in range(GRID_SIZE)])
+
         if st.button("Pintar"):
-            x, y = ord(position[0]) - ord('A'), int(position[1]) - 1
-            st.session_state.canvas[y, x] = selected_color  # Pintar en la posición seleccionada
-            send_discord_notification(username, user_id, position, color)
+            # Lógica para pintar en el lienzo
+            x, y = ord(position[0]) - 65, int(position[1]) - 1
+            st.session_state.canvas[y, x] = selected_color  # Pintar en el lienzo
+            send_discord_notification(st.session_state.username, st.session_state.user.get('id', 'Desconocido'), position, color)
 
     if option == "Administración":
         if is_admin(st.session_state.get('user')):
-            st.write("Opciones de administración aquí")
+            st.write("Panel de administración")
+            # Aquí puedes añadir opciones de administración
         else:
-            st.write("No tienes permisos de administración.")
+            st.error("No tienes permisos de administrador.")
 
 if __name__ == "__main__":
     main()
