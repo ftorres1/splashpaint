@@ -8,7 +8,7 @@ from urllib.parse import urlencode
 # Configuración de Discord
 DISCORD_CLIENT_ID = os.getenv('DISCORD_CLIENT_ID')
 DISCORD_CLIENT_SECRET = os.getenv('DISCORD_CLIENT_SECRET')
-DISCORD_REDIRECT_URI = 'https://your-app-name.streamlit.app/'  # Ajusta esto con tu URL de Streamlit Cloud
+DISCORD_REDIRECT_URI = 'https://splashplace.streamlit.app/'  # Ajusta esto con tu URL de Streamlit Cloud
 DISCORD_API_URL = 'https://discord.com/api/v10'
 
 # Inicializamos el lienzo como una matriz de colores (en blanco)
