@@ -95,7 +95,7 @@ def main():
         st.session_state.username = st.session_state.user['username']
 
     if option == "Pintar":
-        # Lógica de pintura aquí
+        st.title('Mural de 1Splash')
         color = st.color_picker('Selecciona un color', '#000000')
         selected_color = np.array([int(color.lstrip('#')[i:i+2], 16) for i in (0, 2, 4)]) / 255
 
