@@ -16,8 +16,8 @@ def draw_canvas():
     ax.set_yticks([])
     st.pyplot(fig)
 
-# Función principal
-def main():
+# Función para la página de pintura
+def paint_page():
     st.title("Pinta en el lienzo")
 
     # Seleccionar color
@@ -38,6 +38,23 @@ def main():
         
     # Mostrar el lienzo
     draw_canvas()
+
+# Función para la página de inicio
+def home_page():
+    st.title("Bienvenido a SplashPlace")
+    st.write("¡Este es un lienzo colaborativo donde puedes pintar!")
+    st.write("Utiliza el menú para navegar a la página de pintura.")
+    st.write("¡Diviértete pintando!")
+
+# Función principal
+def main():
+    # Menú de navegación
+    menu = st.sidebar.selectbox("Selecciona una opción", ["Inicio", "Pintar"])
+
+    if menu == "Inicio":
+        home_page()
+    elif menu == "Pintar":
+        paint_page()
 
 # Ejecutamos la aplicación
 if __name__ == "__main__":
