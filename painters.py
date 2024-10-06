@@ -80,6 +80,7 @@ def handle_callback():
         response_data = response.json()
         st.write("Response data:", response_data)  # <-- Esta línea ayuda a depurar la respuesta de Discord
 
+        
         if 'access_token' in response_data:
             st.session_state.token = response_data['access_token']
         else:
@@ -89,6 +90,11 @@ def handle_callback():
 def paint_page():
     st.title("Pinta en el lienzo")
     st.write("Antes de jugar, por favor ve al menú e inicia sesión o registra tu nombre (en dispositivos móviles, toca la flecha de arriba en el lado izquierdo de tu pantalla).")
+    code = st.query_params.get('code')
+    if code:
+        code = code[0]  # Convertir de lista a cadena si es necesario
+        st.write("Authorization code received:", code)  # Depuración
+
 
     # Mostrar el lienzo
     draw_canvas()
