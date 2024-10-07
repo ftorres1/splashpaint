@@ -115,6 +115,10 @@ def paint_page():
         st.error("Debes iniciar sesión o registrarte como invitado para colocar píxeles.")
         return  # Salimos de la función si no ha iniciado sesión o registrado
 
+    # Si el usuario ha iniciado sesión, mostrar el mensaje de éxito
+    if st.session_state.user:
+        st.success(f"Iniciaste sesión como: {st.session_state.user['username']}")
+
     # Seleccionar color
     color = st.color_picker('Elige un color', '#000000')
 
