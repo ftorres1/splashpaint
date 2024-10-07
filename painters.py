@@ -11,6 +11,7 @@ DISCORD_CLIENT_ID = st.secrets["client_id"]
 DISCORD_CLIENT_SECRET = st.secrets["client_secret"]
 DISCORD_REDIRECT_URI = "https://splashplace.streamlit.app/"
 DISCORD_API_URL = 'https://discord.com/api/v10'
+DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1292564820016627855/akZ08vnkPWqHu-__UAxzlgB2f4T6ogyxkK8JoV8qhkB5hYz0i0zQ076JW9NI0Tow7sFe'  # URL del webhook
 
 # Definimos el tamaño del lienzo
 GRID_SIZE = 20
@@ -78,6 +79,17 @@ def handle_auth():
             user_info = get_user_info(access_token)
             st.session_state.user = user_info  # Guardar información del usuario en la sesión
 
+# Función para enviar mensaje al webhook de Discord
+def send_webhook_message(user_id, row, col):
+    if user_id:
+        username = user_id
+    else:
+        username = "Invitado"
+
+    message = f"{username} ha puesto un píxel en la fila {row} y columna {col}."
+    payload = {"content": message}
+    requests.post(DISCORD_WEBHOOK_URL, json=payload)
+
 # Función para la página de pintura
 def paint_page():
     st.title("Pinta en el lienzo")
@@ -102,13 +114,16 @@ def paint_page():
     st.sidebar.markdown("""
     1. **Respeto Mutuo**: Todos los usuarios deben tratar a los demás con respeto.
     2. **Contenido Apropiado**: No se permite contenido ofensivo o inapropiado.
-    3. **Colaboración**: ¡Diviértete y colabora con otros usuarios en el lienzo!
+    3. **Diviértete**: ¡Disfruta pintando y compartiendo tu creatividad!
     """)
+
+    # Mostrar el lienzo
+    draw_canvas()
 
     # Verificar si el usuario ha iniciado sesión
     if st.session_state.user is None and st.session_state.guest_username is None:
         st.error("Debes iniciar sesión o registrarte como invitado para colocar píxeles.")
-        return  # Salimos de la función si el usuario no ha iniciado sesión o no es invitado
+        return  # Salimos de la función si no hay usuario
 
     # Seleccionar color
     color = st.color_picker('Elige un color', '#000000')
@@ -119,18 +134,22 @@ def paint_page():
 
     # Lógica para pintar en el lienzo
     if st.button('Pintar'):
-        # Convertimos fila y columna a índices
+        # Convertimos fila y columna a índices (0-19)
         fila_idx = fila - 1
         col_idx = columna - 1
 
         # Pintamos en el lienzo
-        st.session_state.canvas[fila_idx, col_idx] = np.array(hex2color(color))
+        if st.session_state.user:
+            user_id = st.session_state.user['id']  # Obtener el ID del usuario de Discord
+            st.session_state.canvas[fila_idx, col_idx] = np.array(hex2color(color))
+            send_webhook_message(user_id, fila, columna)  # Enviar mensaje al webhook
+        else:
+            user_id = None  # Para invitados
+            st.session_state.canvas[fila_idx, col_idx] = np.array(hex2color(color))
+            send_webhook_message(user_id, fila, columna)  # Enviar mensaje al webhook para invitados
 
         # Guardamos el estado del lienzo
         save_canvas()
-
-    # Mostrar el lienzo
-    draw_canvas()
 
 # Función principal
 def main():
