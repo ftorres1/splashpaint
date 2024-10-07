@@ -95,6 +95,9 @@ def paint_page():
     # Verificar si el usuario ha iniciado sesión
     if st.session_state.user is None:
         st.warning("Debes iniciar sesión para colocar píxeles.")
+        # Enlace para iniciar sesión
+        login_url = f"https://discord.com/oauth2/authorize?client_id={DISCORD_CLIENT_ID}&scope=identify&response_type=code&redirect_uri={DISCORD_REDIRECT_URI}"
+        st.sidebar.markdown(f"[Iniciar sesión con Discord]({login_url})")
         return  # Salimos de la función si el usuario no ha iniciado sesión
 
     # Verificar cooldown
@@ -120,13 +123,13 @@ def paint_page():
         # Cambiamos el color del píxel seleccionado
         selected_color = np.array([int(color.lstrip('#')[i:i + 2], 16) for i in (0, 2, 4)]) / 255
         st.session_state.canvas[y, x] = selected_color
-        
+
         # Guardar el estado del lienzo después de pintar
         save_canvas()
 
         # Actualizar el tiempo de la última acción
         st.session_state.last_action_time = current_time
-
+        
     # Mostrar el lienzo
     draw_canvas()
 
@@ -134,9 +137,9 @@ def paint_page():
 def home_page():
     st.title("¡Bienvenido a SplashPlace!")
     st.write("SplashPlace es un lienzo colaborativo para todos los usuarios, con el propósito de que todos se pongan de acuerdo para crear algo realmente impresionante.")
-    st.write("Utiliza el menú para navegar a la página de pintura. En caso de estar en dispositivos móviles, toca la flecha de hasta arriba a la izquierda de tu pantalla. También debes de iniciar sesión en el menú para colocar píxeles.")
+    st.write("Utiliza el menú para navegar a la página de pintura. En caso de estar en dispositivos móviles, toca la flecha de arriba a la izquierda de tu pantalla.")
     st.write("Si quieres ver los registros públicos, [¡únete a nuestro servidor de Discord oficial!](https://discord.gg/EQ33kn8e5)")
-    
+
     st.title("Términos de Uso")
     st.write("Al colocar tu primer píxel bajo un nombre de usuario o iniciando sesión con Discord, estás comprometiéndote a seguir estas reglas:")
     st.write("1. Sin contenido inapropiado (no dibujar ningún contenido de tipo sexual, gore y demás).")
@@ -149,17 +152,16 @@ def home_page():
 
 # Función principal
 def main():
+    handle_auth()  # Manejar la autenticación de usuario
+
     # Menú de navegación
     menu = st.sidebar.selectbox("Visita una página", ["Inicio", "Pintar"])
-    
-    # Manejo de autenticación
-    handle_auth()
 
     if menu == "Inicio":
         home_page()
     elif menu == "Pintar":
         paint_page()
 
-# Ejecutamos la aplicación
+# Ejecutamos la función principal
 if __name__ == "__main__":
     main()
