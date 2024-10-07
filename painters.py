@@ -82,21 +82,23 @@ def handle_auth():
 # Función para la página de pintura
 def paint_page():
     st.title("Pinta en el lienzo")
-    st.write("Antes de jugar, por favor ve al menú e inicia sesión para colocar píxeles (en dispositivos móviles, toca la flecha de arriba en el lado izquierdo de tu pantalla).")
+    st.write("Todos pueden ver el lienzo, pero solo los usuarios que inician sesión pueden colocar píxeles.")
+    draw_canvas()  # Mostrar el lienzo
+
+    # Enlace para iniciar sesión
+    login_url = f"https://discord.com/oauth2/authorize?client_id={DISCORD_CLIENT_ID}&scope=identify&response_type=code&redirect_uri={DISCORD_REDIRECT_URI}"
+    st.sidebar.markdown(f"[Iniciar sesión con Discord]({login_url})")
 
     # Verificar si el usuario ha iniciado sesión
     if st.session_state.user is None:
-        st.warning("Debes iniciar sesión para colocar píxeles.")
-        # Enlace para iniciar sesión
-        login_url = f"https://discord.com/oauth2/authorize?client_id={DISCORD_CLIENT_ID}&scope=identify&response_type=code&redirect_uri={DISCORD_REDIRECT_URI}"
-        st.sidebar.markdown(f"[Iniciar sesión con Discord]({login_url})")
+        st.error("Debes iniciar sesión para colocar píxeles.")
         return  # Salimos de la función si el usuario no ha iniciado sesión
 
     # Verificar cooldown
     current_time = time.time()
     if current_time - st.session_state.last_action_time < 15:
         remaining_time = 15 - (current_time - st.session_state.last_action_time)
-        st.warning(f"Espera {int(remaining_time)} segundos antes de colocar otro píxel.")
+        st.error(f"Espera {int(remaining_time)} segundos antes de colocar otro píxel.")
         return  # Salimos de la función si no ha pasado el cooldown
 
     # Seleccionar color
@@ -108,22 +110,15 @@ def paint_page():
 
     # Lógica para pintar en el lienzo
     if st.button('Pintar'):
-        # Convertimos fila y columna a índices de la matriz
-        x = columna - 1  # Ajustar a 0-index
-        y = fila - 1     # Ajustar a 0-index
-
         # Cambiamos el color del píxel seleccionado
         selected_color = np.array([int(color.lstrip('#')[i:i + 2], 16) for i in (0, 2, 4)]) / 255
-        st.session_state.canvas[y, x] = selected_color
+        st.session_state.canvas[fila - 1, columna - 1] = selected_color
         
         # Guardar el estado del lienzo después de pintar
         save_canvas()
 
         # Actualizar el tiempo de la última acción
         st.session_state.last_action_time = current_time
-
-    # Mostrar el lienzo
-    draw_canvas()
 
 # Función para la página de inicio
 def home_page():
@@ -144,17 +139,17 @@ def home_page():
 
 # Función principal
 def main():
-    # Manejar la autenticación de usuario
-    handle_auth()
-
     # Menú de navegación
     menu = st.sidebar.selectbox("Visita una página", ["Inicio", "Pintar"])
+
+    # Manejar autenticación
+    handle_auth()
 
     if menu == "Inicio":
         home_page()
     elif menu == "Pintar":
         paint_page()
 
-# Ejecutamos la función principal
+# Ejecutamos la aplicación
 if __name__ == "__main__":
     main()
