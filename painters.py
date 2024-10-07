@@ -90,10 +90,9 @@ def send_webhook_message(user_id, row, col):
     payload = {"content": message}
     requests.post(DISCORD_WEBHOOK_URL, json=payload)
 
-# Función para la página de pintura
 def paint_page():
     st.title("Pinta en el lienzo")
-    st.write("Usa el menu de la izquierda para registrarte o iniciar sesion (en dispositivos mobiles, usa la flecha de arriba a la izquierda para abrir el menu)")
+    st.write("Usa el menú de la izquierda para registrarte o iniciar sesión (en dispositivos móviles, usa la flecha de arriba a la izquierda para abrir el menú)")
     st.button("Refrescar Lienzo")
 
     # Enlace para iniciar sesión
