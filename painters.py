@@ -70,7 +70,6 @@ def get_user_info(access_token):
 
 # Función para manejar la autenticación
 def handle_auth():
-    # Si hay un código en los parámetros de la URL, manejamos la autenticación
     if "code" in st.query_params:
         code = st.query_params["code"]
         token_response = get_access_token(code)
@@ -99,6 +98,9 @@ def paint_page():
     if current_time - st.session_state.last_action_time < 15:
         remaining_time = 15 - (current_time - st.session_state.last_action_time)
         st.error(f"Espera {int(remaining_time)} segundos antes de colocar otro píxel.")
+
+        # Mostrar botón "Continuar" que no hace nada
+        st.button("Continuar")
         return  # Salimos de la función si no ha pasado el cooldown
 
     # Seleccionar color
@@ -122,18 +124,32 @@ def paint_page():
         save_canvas()
         
         # Actualizar el tiempo de la última acción
-        st.session_state.last_action_time = current_time
+        st.session_state.last_action_time = time.time()
+        
+    # Mostrar el lienzo nuevamente
+    draw_canvas()
 
 # Función para la página de inicio
 def home_page():
     st.title("¡Bienvenido a SplashPlace!")
     st.write("SplashPlace es un lienzo colaborativo para todos los usuarios, con el propósito de que todos se pongan de acuerdo para crear algo realmente impresionante.")
-    st.write("Utiliza el menú para navegar a la página de pintura. En caso de estar en dispositivos móviles, toca la flecha de arriba en el lado izquierdo de tu pantalla. También debes de iniciar sesión en el menú para colocar píxeles.")
+    st.write("Utiliza el menú para navegar a la página de pintura. En caso de estar en dispositivos móviles, toca la flecha de hasta arriba a la izquierda de tu pantalla. También debes de iniciar sesión en el menú para colocar píxeles.")
     st.write("Si quieres ver los registros públicos, [¡únete a nuestro servidor de Discord oficial!](https://discord.gg/EQ33kn8e5)")
+
+    st.title("Términos de Uso")
+    st.write("Al colocar tu primer píxel bajo un nombre de usuario o iniciando sesión con Discord, estás comprometiéndote a seguir estas reglas:")
+    st.write("1. Sin contenido inapropiado (no dibujar ningún contenido de tipo sexual, gore y demás).")
+    st.write("2. Respeto mutuo: Trata a todos los usuarios con respeto. No se tolerarán insultos ni acoso.")
+    st.write("3. Colaboración: Este es un espacio colaborativo; respeta las contribuciones de otros.")
+    st.write("4. Limitaciones de uso: No intentes explotar o manipular el sistema.")
+    st.write("5. Uso de recursos: Limita el uso de la plataforma a actividades artísticas.")
+    st.write("6. Responsabilidad: Cada usuario es responsable de su comportamiento en la plataforma.")
+    st.write("7. Disfruta y diviértete: Este es un espacio para la creatividad. Disfruta de la experiencia.")
 
 # Función principal
 def main():
-    handle_auth()  # Manejar la autenticación de usuario
+    # Manejar la autenticación de usuario
+    handle_auth()
 
     # Menú de navegación
     menu = st.sidebar.selectbox("Visita una página", ["Inicio", "Pintar"])
@@ -143,6 +159,6 @@ def main():
     elif menu == "Pintar":
         paint_page()
 
-# Ejecutamos la aplicación
+# Ejecutamos la función principal
 if __name__ == "__main__":
     main()
