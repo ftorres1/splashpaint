@@ -97,33 +97,27 @@ def paint_page():
 
     # Enlace para iniciar sesión
     login_url = f"https://discord.com/oauth2/authorize?client_id={DISCORD_CLIENT_ID}&scope=identify&response_type=code&redirect_uri={DISCORD_REDIRECT_URI}"
-    st.sidebar.markdown(f"[Iniciar sesión con Discord]({login_url})")
+
+    # Mostrar el mensaje de bienvenida o el enlace para iniciar sesión
+    if st.session_state.user:
+        st.sidebar.markdown(f"¡Bienvenido, {st.session_state.user['username']}!")
+    else:
+        st.sidebar.markdown(f"[Iniciar sesión con Discord]({login_url})")
 
     # Opción de registro de nombre de usuario
-    st.sidebar.subheader("O Registrar nombre de usuario")
-    guest_username = st.sidebar.text_input("Ingresa un nombre de usuario")
-    if st.sidebar.button("Registrar como invitado"):
-        if guest_username:
-            st.session_state.guest_username = guest_username
-            st.success(f"Te has registrado como invitado: {guest_username}")
-        else:
-            st.error("Por favor, ingresa un nombre de usuario.")
+    st.sidebar.markdown("O **Registrar nombre de usuario**")
 
-    # Reglas del sitio
-    st.sidebar.subheader("Reglas del sitio")
-    st.sidebar.markdown("""
-    1. **Respeto Mutuo**: Todos los usuarios deben tratar a los demás con respeto.
-    2. **Contenido Apropiado**: No se permite contenido ofensivo o inapropiado.
-    3. **Diviértete**: ¡Disfruta pintando y compartiendo tu creatividad!
-    """)
-
-    # Mostrar el lienzo
-    draw_canvas()
+    # Mostrar las reglas del sitio
+    st.sidebar.markdown("### Reglas del sitio")
+    st.sidebar.markdown("- Todos pueden ver el lienzo.")
+    st.sidebar.markdown("- Solo los usuarios que inician sesión pueden colocar píxeles.")
+    st.sidebar.markdown("- Cada usuario puede colocar un píxel a la vez.")
+    st.sidebar.markdown("- Los invitados pueden registrarse con un nombre de usuario.")
 
     # Verificar si el usuario ha iniciado sesión
-    if st.session_state.user is None and st.session_state.guest_username is None:
-        st.error("Debes iniciar sesión o registrarte como invitado para colocar píxeles.")
-        return  # Salimos de la función si no hay usuario
+    if st.session_state.user is None:
+        st.error("Debes iniciar sesión para colocar píxeles.")
+        return  # Salimos de la función si el usuario no ha iniciado sesión
 
     # Seleccionar color
     color = st.color_picker('Elige un color', '#000000')
@@ -134,24 +128,23 @@ def paint_page():
 
     # Lógica para pintar en el lienzo
     if st.button('Pintar'):
-        # Convertimos fila y columna a índices (0-19)
+        # Convertimos fila y columna a índices de matriz
         fila_idx = fila - 1
         col_idx = columna - 1
 
         # Pintamos en el lienzo
-        if st.session_state.user:
-            user_id = st.session_state.user['id']  # Obtener el ID del usuario de Discord
-            st.session_state.canvas[fila_idx, col_idx] = np.array(hex2color(color))
-            send_webhook_message(user_id, fila, columna)  # Enviar mensaje al webhook
-        else:
-            user_id = None  # Para invitados
-            st.session_state.canvas[fila_idx, col_idx] = np.array(hex2color(color))
-            send_webhook_message(user_id, fila, columna)  # Enviar mensaje al webhook para invitados
+        st.session_state.canvas[fila_idx, col_idx] = np.array(hex2color(color))
 
         # Guardamos el estado del lienzo
         save_canvas()
 
-# Función principal
+        # Enviar mensaje al webhook de Discord
+        user_id = st.session_state.user['id'] if st.session_state.user else None
+        send_webhook_message(user_id, fila, columna)
+
+    # Dibujar el lienzo
+    draw_canvas()
+
 def main():
     handle_auth()  # Manejar la autenticación de usuario
     paint_page()  # Mostrar la página de pintura
