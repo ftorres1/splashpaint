@@ -105,56 +105,30 @@ def paint_page():
     if st.sidebar.button("Registrar como invitado"):
         if guest_username:
             st.session_state.guest_username = guest_username
-            st.success(f"Te has registrado como invitado: {guest_username}")
+            st.success(f"Registrado como invitado: {guest_username}")
         else:
             st.error("Por favor, ingresa un nombre de usuario.")
 
-    # Reglas del sitio
-    st.sidebar.subheader("Reglas del sitio")
-    st.sidebar.markdown("""
-    1. **Respeto Mutuo**: Todos los usuarios deben tratar a los demás con respeto.
-    2. **Contenido Apropiado**: No se permite contenido ofensivo o inapropiado.
-    3. **Diviértete**: ¡Disfruta pintando y compartiendo tu creatividad!
-    """)
+    # Pintar en el lienzo
+    color = st.color_picker("Elige un color", value="#ffffff")  # Color predeterminado en blanco
+    fila = st.number_input("Fila", min_value=1, max_value=GRID_SIZE, value=1)
+    columna = st.number_input("Columna", min_value=1, max_value=GRID_SIZE, value=1)
 
-    # Mostrar el lienzo
-    draw_canvas()
-
-    # Verificar si el usuario ha iniciado sesión
-    if st.session_state.user is None and st.session_state.guest_username is None:
-        st.error("Debes iniciar sesión o registrarte como invitado para colocar píxeles.")
-        return  # Salimos de la función si no hay usuario
-
-    # Seleccionar color
-    color = st.color_picker('Elige un color', '#000000')
-
-    # Seleccionar fila y columna
-    fila = st.selectbox('Selecciona la fila (1-20)', range(1, GRID_SIZE + 1))
-    columna = st.selectbox('Selecciona la columna (1-20)', range(1, GRID_SIZE + 1))
-
-    # Lógica para pintar en el lienzo
-    if st.button('Pintar'):
-        # Convertimos fila y columna a índices (0-19)
+    if st.button("Pintar"):
         fila_idx = fila - 1
         col_idx = columna - 1
-
-        # Pintamos en el lienzo
+        color_rgb = hex2color(color)
+        st.session_state.canvas[fila_idx, col_idx] = np.array(color_rgb)
+        save_canvas()  # Guardar el estado del lienzo
+        # Enviar mensaje al webhook de Discord
         if st.session_state.user:
-            user_id = st.session_state.user['id']  # Obtener el ID del usuario de Discord
-            st.session_state.canvas[fila_idx, col_idx] = np.array(hex2color(color))
-            send_webhook_message(user_id, fila, columna)  # Enviar mensaje al webhook
+            send_webhook_message(st.session_state.user['username'], fila, columna)
         else:
-            user_id = None  # Para invitados
-            st.session_state.canvas[fila_idx, col_idx] = np.array(hex2color(color))
-            send_webhook_message(user_id, fila, columna)  # Enviar mensaje al webhook para invitados
+            send_webhook_message("Invitado", fila, columna)
 
-        # Guardamos el estado del lienzo
-        save_canvas()
+# Manejar la autenticación
+handle_auth()
 
-# Función principal
-def main():
-    handle_auth()  # Manejar la autenticación de usuario
-    paint_page()  # Mostrar la página de pintura
-
-if __name__ == "__main__":
-    main()
+# Mostrar el lienzo y la página de pintura
+draw_canvas()
+paint_page()
