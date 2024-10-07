@@ -37,6 +37,10 @@ if 'canvas' not in st.session_state:
 if 'user' not in st.session_state:
     st.session_state.user = None
 
+# Inicializamos el nombre de usuario para modo invitado
+if 'guest_username' not in st.session_state:
+    st.session_state.guest_username = None
+
 # Función para mostrar el lienzo
 def draw_canvas():
     fig, ax = plt.subplots(figsize=(6, 6))
@@ -82,13 +86,23 @@ def paint_page():
     login_url = f"https://discord.com/oauth2/authorize?client_id={DISCORD_CLIENT_ID}&scope=identify&response_type=code&redirect_uri={DISCORD_REDIRECT_URI}"
     st.sidebar.markdown(f"[Iniciar sesión con Discord]({login_url})")
 
+    # Opción de registro de nombre de usuario
+    st.sidebar.subheader("O Registrar nombre de usuario")
+    guest_username = st.sidebar.text_input("Ingresa un nombre de usuario")
+    if st.sidebar.button("Registrar como invitado"):
+        if guest_username:
+            st.session_state.guest_username = guest_username
+            st.success(f"Te has registrado como invitado: {guest_username}")
+        else:
+            st.error("Por favor, ingresa un nombre de usuario.")
+
     # Mostrar el lienzo
     draw_canvas()
 
-    # Verificar si el usuario ha iniciado sesión
-    if st.session_state.user is None:
-        st.error("Debes iniciar sesión para colocar píxeles.")
-        return  # Salimos de la función si el usuario no ha iniciado sesión
+    # Verificar si el usuario ha iniciado sesión o si hay un nombre de usuario de invitado
+    if st.session_state.user is None and st.session_state.guest_username is None:
+        st.error("Debes iniciar sesión o registrarte como invitado para colocar píxeles.")
+        return  # Salimos de la función si no hay sesión activa ni usuario invitado
 
     # Seleccionar color
     color = st.color_picker('Elige un color', '#000000')
@@ -102,12 +116,12 @@ def paint_page():
         # Convertimos fila y columna a índices de matriz (0-19)
         st.session_state.canvas[fila - 1, columna - 1] = [int(color[1:3], 16) / 255.0, int(color[3:5], 16) / 255.0, int(color[5:7], 16) / 255.0]
         save_canvas()  # Guardar el estado del lienzo
-        st.success("¡Píxel pintado!")
+        st.success("Píxel colocado.")
 
 # Función principal
 def main():
     handle_auth()  # Manejar la autenticación de usuario
-    paint_page()  # Mostrar la página de pintura
+    paint_page()   # Mostrar la página de pintura
 
 if __name__ == "__main__":
     main()
