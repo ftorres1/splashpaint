@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import json
 import requests
 from urllib.parse import urlencode
+import time  # Importar time para manejar el cooldown
 
 # Configuración de Discord
 DISCORD_CLIENT_ID = st.secrets["client_id"]
@@ -38,6 +39,10 @@ if 'canvas' not in st.session_state:
 if 'user' not in st.session_state:
     st.session_state.user = None
 
+# Inicializamos el cooldown
+if 'last_action_time' not in st.session_state:
+    st.session_state.last_action_time = 0
+
 # Función para mostrar el lienzo
 def draw_canvas():
     fig, ax = plt.subplots(figsize=(6, 6))
@@ -67,7 +72,18 @@ def get_user_info(access_token):
 # Función para la página de pintura
 def paint_page():
     st.title("Pinta en el lienzo")
-    st.write("Antes de jugar, por favor ve al menú e inicia sesión o registra tu nombre (en dispositivos móviles, toca la flecha de arriba en el lado izquierdo de tu pantalla).")
+    st.write("Antes de jugar, por favor ve al menú e inicia sesión para colocar píxeles (en dispositivos móviles, toca la flecha de arriba en el lado izquierdo de tu pantalla).")
+    
+    if st.session_state.user is None:
+        st.warning("Debes iniciar sesión para colocar píxeles.")
+        return  # Salimos de la función si el usuario no ha iniciado sesión
+
+    # Verificar cooldown
+    current_time = time.time()
+    if current_time - st.session_state.last_action_time < 15:
+        remaining_time = 15 - (current_time - st.session_state.last_action_time)
+        st.warning(f"Espera {int(remaining_time)} segundos antes de colocar otro píxel.")
+        return
 
     # Seleccionar color
     color = st.color_picker('Elige un color', '#000000')
@@ -88,6 +104,9 @@ def paint_page():
         
         # Guardar el estado del lienzo después de pintar
         save_canvas()
+
+        # Actualizamos el tiempo de la última acción
+        st.session_state.last_action_time = current_time
         
     # Mostrar el lienzo
     draw_canvas()
@@ -96,26 +115,16 @@ def paint_page():
 def home_page():
     st.title("¡Bienvenido a SplashPlace!")
     st.write("SplashPlace es un lienzo colaborativo para todos los usuarios, con el propósito de que todos se pongan de acuerdo para crear algo realmente impresionante.")
-    st.write("Utiliza el menú para navegar a la página de pintura. En caso de estar en dispositivos móviles, toca la flecha de hasta arriba a la izquierda de tu pantalla. También debes de iniciar sesión en el menú para colocar píxeles.")
-
+    st.write("Utiliza el menú para navegar a la página de pintura. En caso de estar en dispositivos móviles, toca la flecha de hasta arriba a la izquierda de tu pantalla. Todos pueden ver el lienzo, incluso si no han iniciado sesión.")
+    
 # Función principal
 def main():
     # Menú de navegación
     menu = st.sidebar.selectbox("Visita una página", ["Inicio", "Pintar"])
 
-    # Manejo de autenticación con Discord
-    query_params = st.query_params
-    if 'code' in query_params:
-        code = query_params['code']
-        token_data = get_access_token(code)
-        access_token = token_data.get('access_token')
-
-        if access_token:
-            user_info = get_user_info(access_token)
-            st.session_state.user = user_info  # Guardar usuario en la sesión
-
-    # Enlace de inicio de sesión
+    # Agregar inicio de sesión en la barra lateral
     if st.session_state.user is None:
+        st.sidebar.subheader("Iniciar sesión con Discord")
         params = {
             'client_id': DISCORD_CLIENT_ID,
             'redirect_uri': DISCORD_REDIRECT_URI,
@@ -123,7 +132,7 @@ def main():
             'scope': 'identify',
         }
         auth_url = f'https://discord.com/api/oauth2/authorize?{urlencode(params)}'
-        st.sidebar.markdown(f"[Iniciar sesión con Discord]({auth_url})")
+        st.sidebar.markdown(f"[Iniciar sesión]({auth_url})")
     else:
         st.sidebar.write(f"Bienvenido, {st.session_state.user['username']}!")
 
@@ -132,6 +141,5 @@ def main():
     elif menu == "Pintar":
         paint_page()
 
-# Ejecutamos la aplicación
 if __name__ == "__main__":
     main()
