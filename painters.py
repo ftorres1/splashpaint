@@ -103,18 +103,7 @@ def main():
     # Menú de navegación
     menu = st.sidebar.selectbox("Visita una página", ["Inicio", "Pintar"])
 
-    # Opción de inicio de sesión
-    params = {
-        'client_id': DISCORD_CLIENT_ID,
-        'redirect_uri': DISCORD_REDIRECT_URI,
-        'response_type': 'code',
-        'scope': 'identify',
-    }
-    auth_url = f'https://discord.com/api/oauth2/authorize?{urlencode(params)}'
-    
-    st.sidebar.markdown(f"[Iniciar sesión con Discord]({auth_url})")
-
-    # Manejo del inicio de sesión
+    # Manejo de autenticación con Discord
     query_params = st.query_params
     if 'code' in query_params:
         code = query_params['code']
@@ -123,21 +112,26 @@ def main():
 
         if access_token:
             user_info = get_user_info(access_token)
-            st.session_state.user = user_info  # Guardamos la información del usuario
-            st.experimental_set_query_params()  # Limpiar los parámetros de consulta después del inicio de sesión
-        else:
-            st.error("Error al obtener el token de acceso.")
+            st.session_state.user = user_info  # Guardar usuario en la sesión
 
-    # Mostrar nombre de usuario si está disponible
-    if st.session_state.user:
+    # Enlace de inicio de sesión
+    if st.session_state.user is None:
+        params = {
+            'client_id': DISCORD_CLIENT_ID,
+            'redirect_uri': DISCORD_REDIRECT_URI,
+            'response_type': 'code',
+            'scope': 'identify',
+        }
+        auth_url = f'https://discord.com/api/oauth2/authorize?{urlencode(params)}'
+        st.sidebar.markdown(f"[Iniciar sesión con Discord]({auth_url})")
+    else:
         st.sidebar.write(f"Bienvenido, {st.session_state.user['username']}!")
 
-    # Mostrar las páginas correspondientes
     if menu == "Inicio":
         home_page()
     elif menu == "Pintar":
         paint_page()
 
-# Ejecutamos la función principal
+# Ejecutamos la aplicación
 if __name__ == "__main__":
     main()
