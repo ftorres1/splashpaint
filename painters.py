@@ -107,9 +107,6 @@ def paint_page():
             st.session_state.guest_username = guest_username
             st.success(f"Registrado como invitado: {guest_username}")
 
-    # Mostrar lienzo
-    draw_canvas()
-
     # Verificar si el usuario ha iniciado sesión o se ha registrado
     if st.session_state.user is None and st.session_state.guest_username is None:
         st.error("Debes iniciar sesión o registrarte como invitado para colocar píxeles.")
@@ -118,6 +115,9 @@ def paint_page():
     # Si el usuario ha iniciado sesión, mostrar el mensaje de éxito
     if st.session_state.user:
         st.success(f"Iniciaste sesión como: {st.session_state.user['username']}")
+
+     # Mostrar lienzo
+    draw_canvas()
 
     # Seleccionar color
     color = st.color_picker('Elige un color', '#000000')
