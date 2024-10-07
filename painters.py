@@ -68,7 +68,7 @@ def home_page():
     st.write("SplashPlace es un lienzo colaborativo para todos los usuarios, con el propósito de que todos se pongan de acuerdo para crear algo realmente impresionante.")
     st.write("Utiliza el menú para navegar a la página de pintura. En caso de estar en dispositivos móviles, toca la flecha de hasta arriba a la izquierda de tu pantalla. También debes de iniciar sesión en el menú para colocar píxeles.")
     st.write("Si quieres ver los registros públicos, [¡únete a nuestro servidor de Discord oficial!](https://discord.gg/EQ33kn8e5)")
-    
+
     st.title("Términos de Uso")
     st.write("Al colocar tu primer píxel bajo un nombre de usuario o iniciando sesión con Discord, estás comprometiéndote a seguir estas reglas:")
     st.write("1. Sin contenido inapropiado (no dibujar ningún contenido de tipo sexual, gore y demás).")
@@ -90,5 +90,5 @@ def main():
         paint_page()
 
 # Ejecutamos la aplicación
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
