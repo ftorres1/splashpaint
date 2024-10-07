@@ -103,16 +103,16 @@ def paint_page():
     2. **Contenido Apropiado**: No se permite contenido ofensivo o inapropiado.
     3. **No Spam**: Evita enviar mensajes o colores repetidos sin motivo.
     4. **Colaboración**: Trabajemos juntos para crear un lienzo divertido y creativo.
-    5. **Limitaciones**: Solo los usuarios autenticados pueden colocar píxeles en el lienzo.
+    5. **Limitaciones**: Solo los usuarios autenticados pueden colocar colores en el lienzo.
     """)
 
-    # Mostrar el lienzo
+    # Mostrar lienzo
     draw_canvas()
 
-    # Verificar si el usuario ha iniciado sesión o si hay un nombre de usuario de invitado
+    # Verificar si el usuario ha iniciado sesión
     if st.session_state.user is None and st.session_state.guest_username is None:
         st.error("Debes iniciar sesión o registrarte como invitado para colocar píxeles.")
-        return  # Salimos de la función si no hay sesión activa ni usuario invitado
+        return  # Salimos de la función si el usuario no ha iniciado sesión ni se ha registrado como invitado
 
     # Seleccionar color
     color = st.color_picker('Elige un color', '#000000')
@@ -123,13 +123,14 @@ def paint_page():
 
     # Lógica para pintar en el lienzo
     if st.button('Pintar'):
-        # Convertimos fila y columna a índices de la matriz
+        # Convertimos fila y columna a índices de matriz
         fila_idx = fila - 1
         col_idx = columna - 1
-        # Pintamos en el lienzo
+        
+        # Pintar en el lienzo
         st.session_state.canvas[fila_idx, col_idx] = np.array(st.hex2color(color))
-
-        # Guardamos el estado del lienzo
+        
+        # Guardar el estado del lienzo
         save_canvas()
 
 # Función principal
