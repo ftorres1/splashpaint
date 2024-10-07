@@ -82,7 +82,6 @@ def handle_auth():
 def paint_page():
     st.title("Pinta en el lienzo")
     st.write("Todos pueden ver el lienzo, pero solo los usuarios que inician sesión pueden colocar píxeles.")
-    draw_canvas()  # Mostrar el lienzo
 
     # Enlace para iniciar sesión
     login_url = f"https://discord.com/oauth2/authorize?client_id={DISCORD_CLIENT_ID}&scope=identify&response_type=code&redirect_uri={DISCORD_REDIRECT_URI}"
