@@ -106,29 +106,32 @@ def paint_page():
     if st.sidebar.button("Registrar como invitado"):
         if guest_username:
             st.session_state.guest_username = guest_username
-            st.success(f"Has registrado como invitado: {guest_username}")
-    
-    # Color para pintar
-    color = st.sidebar.color_picker("Elige un color", "#000000")
-    row = st.sidebar.number_input("Fila", 1, GRID_SIZE, 1) - 1  # Ajustar a índice (0-19)
-    col = st.sidebar.number_input("Columna", 1, GRID_SIZE, 1) - 1  # Ajustar a índice (0-19)
-    
-    if st.sidebar.button("Pintar"):
-        if (0 <= row < GRID_SIZE) and (0 <= col < GRID_SIZE):
-            # Pintamos en el lienzo
-            st.session_state.canvas[row, col] = hex2color(color)  # Usar hex2color para obtener el color
-            save_canvas()  # Guardamos el estado del lienzo
-            send_webhook_message(st.session_state.user, row, col)  # Enviar mensaje al webhook
-            st.success("Píxel pintado.")
-        else:
-            st.error("Fila o columna fuera de rango.")
-    
-    draw_canvas()  # Mostrar el lienzo
 
-# Función principal
-def main():
+    # Selección de color, fila y columna
+    st.sidebar.subheader("Selecciona color y ubicación")
+    color = st.sidebar.color_picker("Selecciona un color", "#000000")
+    fila = st.sidebar.number_input("Fila (1 a 20)", min_value=1, max_value=GRID_SIZE)
+    columna = st.sidebar.number_input("Columna (1 a 20)", min_value=1, max_value=GRID_SIZE)
+
+    # Botón para colocar píxel
+    if st.sidebar.button("Colocar píxel"):
+        if st.session_state.user is not None or st.session_state.guest_username:
+            fila_idx = fila - 1
+            col_idx = columna - 1
+            
+            # Pintamos en el lienzo
+            st.session_state.canvas[fila_idx, col_idx] = np.array(hex2color(color))
+            
+            # Guardamos el estado del lienzo
+            save_canvas()
+            
+            # Enviar el mensaje al webhook
+            send_webhook_message(st.session_state.user, fila_idx, col_idx)
+
+    # Mostrar el lienzo
+    draw_canvas()
+
+# Ejecutar la función principal
+if __name__ == "__main__":
     handle_auth()  # Manejar la autenticación de usuario
     paint_page()  # Mostrar la página de pintura
-
-if __name__ == "__main__":
-    main()
