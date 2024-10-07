@@ -93,7 +93,7 @@ def send_webhook_message(user_id, row, col):
 # Función para la página de pintura
 def paint_page():
     st.title("Pinta en el lienzo")
-    st.write("Todos pueden ver el lienzo, pero solo los usuarios que inician sesión o se registran pueden colocar píxeles.")
+    st.write("Usa el menu de la izquierda para registrarte o iniciar sesion (en dispositivos mobiles, usa la flecha de arriba a la izquierda para abrir el menu)) .")
 
     # Enlace para iniciar sesión
     login_url = f"https://discord.com/oauth2/authorize?client_id={DISCORD_CLIENT_ID}&scope=identify&response_type=code&redirect_uri={DISCORD_REDIRECT_URI}"
