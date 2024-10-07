@@ -96,6 +96,16 @@ def paint_page():
         else:
             st.error("Por favor, ingresa un nombre de usuario.")
 
+    # Reglas del sitio
+    st.sidebar.subheader("Reglas del sitio")
+    st.sidebar.markdown("""
+    1. **Respeto Mutuo**: Todos los usuarios deben tratar a los demás con respeto.
+    2. **Contenido Apropiado**: No se permite contenido ofensivo o inapropiado.
+    3. **No Spam**: Evita enviar mensajes o colores repetidos sin motivo.
+    4. **Colaboración**: Trabajemos juntos para crear un lienzo divertido y creativo.
+    5. **Limitaciones**: Solo los usuarios autenticados pueden colocar píxeles en el lienzo.
+    """)
+
     # Mostrar el lienzo
     draw_canvas()
 
@@ -113,15 +123,19 @@ def paint_page():
 
     # Lógica para pintar en el lienzo
     if st.button('Pintar'):
-        # Convertimos fila y columna a índices de matriz (0-19)
-        st.session_state.canvas[fila - 1, columna - 1] = [int(color[1:3], 16) / 255.0, int(color[3:5], 16) / 255.0, int(color[5:7], 16) / 255.0]
-        save_canvas()  # Guardar el estado del lienzo
-        st.success("Píxel colocado.")
+        # Convertimos fila y columna a índices de la matriz
+        fila_idx = fila - 1
+        col_idx = columna - 1
+        # Pintamos en el lienzo
+        st.session_state.canvas[fila_idx, col_idx] = np.array(st.hex2color(color))
+
+        # Guardamos el estado del lienzo
+        save_canvas()
 
 # Función principal
 def main():
     handle_auth()  # Manejar la autenticación de usuario
-    paint_page()   # Mostrar la página de pintura
+    paint_page()  # Mostrar la página de pintura
 
 if __name__ == "__main__":
     main()
