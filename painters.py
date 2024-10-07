@@ -100,6 +100,7 @@ def paint_page():
         # Mostrar botón "Continuar" que no hace nada
         st.button("Continuar")
         return  # Salimos de la función si no ha pasado el cooldown
+        save_canvas()
         draw_canvas()
 
     # Seleccionar color
