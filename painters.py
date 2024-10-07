@@ -3,7 +3,6 @@ import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
 import json
-import time
 
 # Definimos el tamaño del lienzo
 GRID_SIZE = 20
@@ -31,54 +30,65 @@ if 'canvas' not in st.session_state:
 def draw_canvas():
     fig, ax = plt.subplots(figsize=(6, 6))
     ax.imshow(st.session_state.canvas, interpolation='nearest')
-    ax.set_xticks([])  # Quitar las marcas del eje X
-    ax.set_yticks([])  # Quitar las marcas del eje Y
+    ax.set_xticks([])
+    ax.set_yticks([])
     st.pyplot(fig)
 
 # Función para la página de pintura
 def paint_page():
     st.title("Pinta en el lienzo")
-    st.write("Puedes pintar en el lienzo seleccionando un color y eligiendo una posición.")
-    
+    st.write("Antes de jugar, por favor ve al menú e inicia sesión o registra tu nombre (en dispositivos móviles, toca la flecha de arriba en el lado izquierdo de tu pantalla).")
+
+    # Seleccionar color
+    color = st.color_picker('Elige un color', '#000000')
+
+    # Seleccionar fila y columna
+    fila = st.selectbox('Selecciona la fila (1-20)', range(1, GRID_SIZE + 1))
+    columna = st.selectbox('Selecciona la columna (1-20)', range(1, GRID_SIZE + 1))
+
+    # Lógica para pintar en el lienzo
+    if st.button('Pintar'):
+        # Convertimos fila y columna a índices de la matriz
+        x = columna - 1  # Ajustar a 0-index
+        y = fila - 1     # Ajustar a 0-index
+
+        # Cambiamos el color del píxel seleccionado
+        selected_color = np.array([int(color.lstrip('#')[i:i + 2], 16) for i in (0, 2, 4)]) / 255
+        st.session_state.canvas[y, x] = selected_color
+        
+        # Guardar el estado del lienzo después de pintar
+        save_canvas()
+        
     # Mostrar el lienzo
     draw_canvas()
 
-    # Cooldown para limitar la frecuencia de pintura (15 segundos entre cada acción de pintura)
-    if 'last_paint_time' not in st.session_state:
-        st.session_state.last_paint_time = 0
+# Función para la página de inicio
+def home_page():
+    st.title("¡Bienvenido a SplashPlace!")
+    st.write("SplashPlace es un lienzo colaborativo para todos los usuarios, con el propósito de que todos se pongan de acuerdo para crear algo realmente impresionante.")
+    st.write("Utiliza el menú para navegar a la página de pintura. En caso de estar en dispositivos móviles, toca la flecha de hasta arriba a la izquierda de tu pantalla. También debes de iniciar sesión en el menú para colocar píxeles.")
+    st.write("Si quieres ver los registros públicos, [¡únete a nuestro servidor de Discord oficial!](https://discord.gg/EQ33kn8e5)")
+    
+    st.title("Términos de Uso")
+    st.write("Al colocar tu primer píxel bajo un nombre de usuario o iniciando sesión con Discord, estás comprometiéndote a seguir estas reglas:")
+    st.write("1. Sin contenido inapropiado (no dibujar ningún contenido de tipo sexual, gore y demás).")
+    st.write("2. Respeto mutuo: Trata a todos los usuarios con respeto. No se tolerarán insultos ni acoso.")
+    st.write("3. Colaboración: Este es un espacio colaborativo; respeta las contribuciones de otros.")
+    st.write("4. Limitaciones de uso: No intentes explotar o manipular el sistema.")
+    st.write("5. Uso de recursos: Limita el uso de la plataforma a actividades artísticas.")
+    st.write("6. Responsabilidad: Cada usuario es responsable de su comportamiento en la plataforma.")
+    st.write("7. Disfruta y diviértete: Este es un espacio para la creatividad. Disfruta de la experiencia.")
 
-    time_since_last_paint = time.time() - st.session_state.last_paint_time
-
-    if time_since_last_paint < 15:
-        st.warning(f"Debes esperar {int(15 - time_since_last_paint)} segundos antes de pintar de nuevo.")
-    else:
-        # Seleccionar color
-        color = st.color_picker('Elige un color', '#000000')
-
-        # Seleccionar fila y columna
-        fila = st.selectbox('Selecciona la fila (1-20)', range(1, GRID_SIZE + 1))
-        columna = st.selectbox('Selecciona la columna (1-20)', range(1, GRID_SIZE + 1))
-
-        # Lógica para pintar en el lienzo
-        if st.button('Pintar'):
-            # Convertimos fila y columna a índices de la matriz
-            x = columna - 1  # Ajustar a 0-index
-            y = fila - 1     # Ajustar a 0-index
-
-            # Cambiamos el color del píxel seleccionado
-            selected_color = np.array([int(color.lstrip('#')[i:i + 2], 16) for i in (0, 2, 4)]) / 255
-            st.session_state.canvas[y, x] = selected_color
-            
-            # Guardar el estado del lienzo después de pintar
-            save_canvas()
-            
-            # Actualizar el tiempo del último pintado
-            st.session_state.last_paint_time = time.time()
-
-# Lógica principal de la aplicación
+# Función principal
 def main():
-    st.sidebar.title("Opciones de Pintura")
-    paint_page()
+    # Menú de navegación
+    menu = st.sidebar.selectbox("Visita una página", ["Inicio", "Pintar"])
 
-if __name__ == '__main__':
+    if menu == "Inicio":
+        home_page()
+    elif menu == "Pintar":
+        paint_page()
+
+# Ejecutamos la aplicación
+if __name__ == "__main__":
     main()
