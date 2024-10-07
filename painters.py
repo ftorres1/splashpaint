@@ -96,10 +96,19 @@ def paint_page():
 # Función para la página de inicio
 def home_page():
     st.title("¡Bienvenido a SplashPlace!")
-    st.write("SplashPlace es un lienzo colaborativo para todos los usuarios...")
-    
-    # Mensaje sobre inicio de sesión
-    st.write("Utiliza el menú para navegar a la página de pintura. Puedes iniciar sesión con Discord para colocar píxeles.")
+    st.write("SplashPlace es un lienzo colaborativo para todos los usuarios, con el propósito de que todos se pongan de acuerdo para crear algo realmente impresionante.")
+    st.write("Utiliza el menú para navegar a la página de pintura. En caso de estar en dispositivos móviles, toca la flecha de hasta arriba a la izquierda de tu pantalla. También debes de iniciar sesión en el menú para colocar píxeles.")
+    st.write("Si quieres ver los registros públicos, [¡únete a nuestro servidor de Discord oficial!](https://discord.gg/EQ33kn8e5)")
+
+    st.title("Términos de Uso")
+    st.write("Al colocar tu primer píxel bajo un nombre de usuario o iniciando sesión con Discord, estás comprometiéndote a seguir estas reglas:")
+    st.write("1. Sin contenido inapropiado (no dibujar ningún contenido de tipo sexual, gore y demás).")
+    st.write("2. Respeto mutuo: Trata a todos los usuarios con respeto. No se tolerarán insultos ni acoso.")
+    st.write("3. Colaboración: Este es un espacio colaborativo; respeta las contribuciones de otros.")
+    st.write("4. Limitaciones de uso: No intentes explotar o manipular el sistema.")
+    st.write("5. Uso de recursos: Limita el uso de la plataforma a actividades artísticas.")
+    st.write("6. Responsabilidad: Cada usuario es responsable de su comportamiento en la plataforma.")
+    st.write("7. Disfruta y diviértete: Este es un espacio para la creatividad. Disfruta de la experiencia.")
 
 # Función principal
 def main():
@@ -107,18 +116,17 @@ def main():
     menu = st.sidebar.selectbox("Visita una página", ["Inicio", "Pintar"])
 
     # Manejo de inicio de sesión
-    query_params = st.experimental_get_query_params()  # Obtener los parámetros de consulta
+    query_params = st.experimental_get_query_params()
     if 'code' in query_params:
-        code = query_params['code'][0]
+        code = query_params['code'][0]  # Obtener el código de autorización
         token_data = get_access_token(code)
         access_token = token_data.get('access_token')
 
         if access_token:
             user_info = get_user_info(access_token)
             st.session_state.user = user_info
-            st.experimental_set_query_params()  # Limpiar parámetros de consulta después de iniciar sesión
-        else:
-            st.error("Error al obtener el token de acceso.")
+            # Limpiar los parámetros de consulta después del inicio de sesión
+            st.experimental_set_query_params()  # Esto elimina todos los parámetros de consulta
 
     if menu == "Inicio":
         home_page()
