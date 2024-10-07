@@ -4,13 +4,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 import json
 import requests
-from urllib.parse import urlencode
-import time  # Para manejar el cooldown
+import time
 
 # Configuración de Discord
-DISCORD_CLIENT_ID = st.secrets["client_id"]  # Se obtiene del archivo secrets.toml
-DISCORD_CLIENT_SECRET = st.secrets["client_secret"]  # Se obtiene del archivo secrets.toml
-DISCORD_REDIRECT_URI = "https://splashplace.streamlit.app/"  # URL de Streamlit Cloud
+DISCORD_CLIENT_ID = st.secrets["client_id"]
+DISCORD_CLIENT_SECRET = st.secrets["client_secret"]
+DISCORD_REDIRECT_URI = "https://splashplace.streamlit.app/"
 DISCORD_API_URL = 'https://discord.com/api/v10'
 
 # Definimos el tamaño del lienzo
@@ -73,7 +72,7 @@ def get_user_info(access_token):
 def paint_page():
     st.title("Pinta en el lienzo")
     st.write("Antes de jugar, por favor ve al menú e inicia sesión para colocar píxeles (en dispositivos móviles, toca la flecha de arriba en el lado izquierdo de tu pantalla).")
-    
+
     # Verificar si el usuario ha iniciado sesión
     if st.session_state.user is None:
         st.warning("Debes iniciar sesión para colocar píxeles.")
@@ -102,13 +101,13 @@ def paint_page():
         # Cambiamos el color del píxel seleccionado
         selected_color = np.array([int(color.lstrip('#')[i:i + 2], 16) for i in (0, 2, 4)]) / 255
         st.session_state.canvas[y, x] = selected_color
+
+        # Actualizar el tiempo de la última acción
+        st.session_state.last_action_time = current_time
         
         # Guardar el estado del lienzo después de pintar
         save_canvas()
-        
-        # Actualizamos el tiempo de la última acción
-        st.session_state.last_action_time = time.time()
-        
+
     # Mostrar el lienzo
     draw_canvas()
 
@@ -118,6 +117,12 @@ def home_page():
     st.write("SplashPlace es un lienzo colaborativo para todos los usuarios, con el propósito de que todos se pongan de acuerdo para crear algo realmente impresionante.")
     st.write("Utiliza el menú para navegar a la página de pintura. En caso de estar en dispositivos móviles, toca la flecha de hasta arriba a la izquierda de tu pantalla. También debes de iniciar sesión en el menú para colocar píxeles.")
     st.write("Si quieres ver los registros públicos, [¡únete a nuestro servidor de Discord oficial!](https://discord.gg/EQ33kn8e5)")
+
+    # Mostrar información del usuario
+    if st.session_state.user:
+        st.sidebar.write(f"Bienvenido, {st.session_state.user['username']}!")
+    else:
+        st.sidebar.write("No has iniciado sesión.")
 
     st.title("Términos de Uso")
     st.write("Al colocar tu primer píxel bajo un nombre de usuario o iniciando sesión con Discord, estás comprometiéndote a seguir estas reglas:")
@@ -134,43 +139,26 @@ def main():
     # Menú de navegación
     menu = st.sidebar.selectbox("Visita una página", ["Inicio", "Pintar"])
 
-    # Opciones de inicio de sesión
-    if st.session_state.user is None:
-        st.sidebar.subheader("Iniciar Sesión")
-        params = {
-            'client_id': DISCORD_CLIENT_ID,
-            'redirect_uri': DISCORD_REDIRECT_URI,
-            'response_type': 'code',
-            'scope': 'identify',
-        }
-        auth_url = f'https://discord.com/api/oauth2/authorize?{urlencode(params)}'
-        st.sidebar.markdown(f"[Iniciar sesión con Discord]({auth_url})")
-    else:
-        st.sidebar.write(f"Bienvenido, {st.session_state.user['username']}!")
+    # Iniciar sesión
+    if st.sidebar.button("Iniciar sesión con Discord"):
+        st.session_state.user = None  # Reiniciar el usuario
+        st.session_state.access_token = None  # Reiniciar el token de acceso
+        st.session_state.redirect_url = f"{DISCORD_REDIRECT_URI}?client_id={DISCORD_CLIENT_ID}&scope=identify&response_type=code"
+        st.sidebar.markdown(f"[Inicia sesión aquí]({st.session_state.redirect_url})")
 
-        # Opción para cerrar sesión
-        if st.sidebar.button('Cerrar sesión'):
-            st.session_state.user = None  # Limpiamos la sesión de usuario
-
-    # Manejo de la respuesta de OAuth
-    query_params = st.query_params
-    if 'code' in query_params:
-        code = query_params['code']
-        token_data = get_access_token(code)
-        access_token = token_data.get('access_token')
-
-        if access_token:
-            user_info = get_user_info(access_token)
-            st.session_state.user = user_info
-            st.experimental_rerun()  # Reiniciar para cargar la sesión de usuario
-        else:
-            st.error("Error al obtener el token de acceso.")
+    # Comprobar si hay un código en la URL (inicializa sesión)
+    if "code" in st.experimental_get_query_params():
+        code = st.experimental_get_query_params()["code"][0]  # Obtenemos el código de la URL
+        token_response = get_access_token(code)
+        if "access_token" in token_response:
+            st.session_state.access_token = token_response["access_token"]
+            st.session_state.user = get_user_info(st.session_state.access_token)  # Obtener información del usuario
 
     if menu == "Inicio":
         home_page()
     elif menu == "Pintar":
         paint_page()
 
-# Ejecutamos la función principal
+# Ejecutamos la aplicación
 if __name__ == "__main__":
     main()
