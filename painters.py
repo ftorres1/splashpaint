@@ -10,10 +10,10 @@ from urllib.parse import urlencode
 GRID_SIZE = 20
 DATABASE_FILE = 'canvas_state.json'
 
-# Configuración de Discord
-DISCORD_CLIENT_ID = os.getenv('DISCORD_CLIENT_ID')
-DISCORD_CLIENT_SECRET = os.getenv('DISCORD_CLIENT_SECRET')
-DISCORD_REDIRECT_URI = 'https://splashplace.streamlit.app/'  # Cambia esto a tu URL de Streamlit Cloud
+# Cargar el client_id y client_secret desde secrets.toml
+DISCORD_CLIENT_ID = st.secrets["client_id"]
+DISCORD_CLIENT_SECRET = st.secrets["client_secret"]
+DISCORD_REDIRECT_URI = "https://splashplace.streamlit.app/"  # Ajusta esto con tu URL de Streamlit Cloud
 DISCORD_API_URL = 'https://discord.com/api/v10'
 
 # Función para cargar el estado del lienzo desde el archivo JSON
@@ -67,9 +67,9 @@ def get_user_info(access_token):
 
 # Función para manejar el inicio de sesión
 def handle_login():
-    query_params = st.experimental_get_query_params()
+    query_params = st.query_params
     if 'code' in query_params:
-        code = query_params['code'][0]
+        code = query_params['code']
         token_data = get_access_token(code)
         access_token = token_data.get('access_token')
 
@@ -84,6 +84,9 @@ def handle_login():
 def paint_page():
     st.title("Pinta en el lienzo")
     st.write("Antes de jugar, por favor ve al menú e inicia sesión o registra tu nombre (en dispositivos móviles, toca la flecha de arriba en el lado izquierdo de tu pantalla).")
+
+    # Manejar el inicio de sesión
+    handle_login()
 
     # Si el usuario ha iniciado sesión, mostramos su nombre
     if st.session_state.user:
@@ -116,25 +119,11 @@ def paint_page():
 def home_page():
     st.title("¡Bienvenido a SplashPlace!")
     st.write("SplashPlace es un lienzo colaborativo para todos los usuarios, con el propósito de que todos se pongan de acuerdo para crear algo realmente impresionante.")
-    st.write("Utiliza el menú para navegar a la página de pintura. En caso de estar en dispositivos móviles, toca la flecha de arriba a la izquierda de tu pantalla. También debes de iniciar sesión en el menú para colocar píxeles.")
+    st.write("Utiliza el menú para navegar a la página de pintura. En caso de estar en dispositivos móviles, toca la flecha de hasta arriba a la izquierda de tu pantalla. También debes de iniciar sesión en el menú para colocar píxeles.")
     st.write("Si quieres ver los registros públicos, [¡únete a nuestro servidor de Discord oficial!](https://discord.gg/EQ33kn8e5)")
-
-    # Opción de inicio de sesión con Discord
-    if not st.session_state.user:
-        params = {
-            'client_id': DISCORD_CLIENT_ID,
-            'redirect_uri': DISCORD_REDIRECT_URI,
-            'response_type': 'code',
-            'scope': 'identify',
-        }
-        auth_url = f'https://discord.com/api/oauth2/authorize?{urlencode(params)}'
-        st.markdown(f"[Iniciar sesión con Discord]({auth_url})")
 
 # Función principal
 def main():
-    # Manejar el inicio de sesión
-    handle_login()
-
     # Menú de navegación
     menu = st.sidebar.selectbox("Visita una página", ["Inicio", "Pintar"])
 
@@ -143,6 +132,6 @@ def main():
     elif menu == "Pintar":
         paint_page()
 
-# Ejecutamos la aplicación
+# Ejecutamos la función principal
 if __name__ == "__main__":
     main()
