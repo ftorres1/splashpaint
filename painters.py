@@ -97,10 +97,10 @@ def paint_page():
     if current_time - st.session_state.last_action_time < 15:
         remaining_time = 15 - (current_time - st.session_state.last_action_time)
         st.error(f"Espera {int(remaining_time)} segundos antes de colocar otro píxel.")
-
         # Mostrar botón "Continuar" que no hace nada
         st.button("Continuar")
         return  # Salimos de la función si no ha pasado el cooldown
+        draw_canvas()
 
     # Seleccionar color
     color = st.color_picker('Elige un color', '#000000')
