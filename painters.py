@@ -97,48 +97,37 @@ def home_page():
     st.title("¡Bienvenido a SplashPlace!")
     st.write("SplashPlace es un lienzo colaborativo para todos los usuarios, con el propósito de que todos se pongan de acuerdo para crear algo realmente impresionante.")
     st.write("Utiliza el menú para navegar a la página de pintura. En caso de estar en dispositivos móviles, toca la flecha de hasta arriba a la izquierda de tu pantalla. También debes de iniciar sesión en el menú para colocar píxeles.")
-    st.write("Si quieres ver los registros públicos, [¡únete a nuestro servidor de Discord oficial!](https://discord.gg/EQ33kn8e5)")
 
-    # Mostrar información del usuario si ha iniciado sesión
-    if st.session_state.user:
-        st.sidebar.write(f"Bienvenido, {st.session_state.user['username']}!")
-
-# Función para manejar el inicio de sesión con Discord
-def handle_discord_login():
-    query_params = st.query_params  # Obtener parámetros de consulta
-    if 'code' in query_params:  # Verificar si hay un código de autorización
+# Función principal
+def main():
+    # Menú de navegación
+    menu = st.sidebar.selectbox("Visita una página", ["Inicio", "Pintar"])
+    
+    # Manejo del inicio de sesión
+    query_params = st.query_params
+    if 'code' in query_params:
         code = query_params['code']
         token_data = get_access_token(code)
         access_token = token_data.get('access_token')
 
         if access_token:
             user_info = get_user_info(access_token)
-            st.session_state.user = user_info  # Guardar información del usuario
-            # No es necesario establecer parámetros de consulta después de iniciar sesión
-        else:
-            st.error("Error al obtener el token de acceso.")
+            st.session_state.user = user_info
+            # Limpiar parámetros de consulta después del inicio de sesión
+            st.experimental_rerun()  # Recarga la aplicación para aplicar el cambio
 
-    # Opción de iniciar sesión con Discord
-    params = {
-        'client_id': DISCORD_CLIENT_ID,
-        'redirect_uri': DISCORD_REDIRECT_URI,
-        'response_type': 'code',
-        'scope': 'identify',
-    }
-    auth_url = f'https://discord.com/api/oauth2/authorize?{urlencode(params)}'
-    st.sidebar.markdown(f"[Iniciar sesión con Discord]({auth_url})")
+    # Mostrar información del usuario en la barra lateral
+    if st.session_state.user:
+        st.sidebar.write(f"Bienvenido, {st.session_state.user['username']}!")
+    else:
+        st.sidebar.write("No has iniciado sesión.")
 
-# Función principal
-def main():
-    handle_discord_login()  # Manejar inicio de sesión
-
-    # Menú de navegación
-    menu = st.sidebar.selectbox("Visita una página", ["Inicio", "Pintar"])
-
+    # Navegar según el menú seleccionado
     if menu == "Inicio":
         home_page()
     elif menu == "Pintar":
         paint_page()
 
+# Ejecutamos la función principal
 if __name__ == "__main__":
     main()
