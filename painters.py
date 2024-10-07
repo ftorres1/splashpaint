@@ -34,6 +34,10 @@ def save_canvas():
 if 'canvas' not in st.session_state:
     st.session_state.canvas = load_canvas()
 
+# Inicializamos el estado del usuario
+if 'user' not in st.session_state:
+    st.session_state.user = None
+
 # Función para mostrar el lienzo
 def draw_canvas():
     fig, ax = plt.subplots(figsize=(6, 6))
@@ -61,13 +65,28 @@ def get_user_info(access_token):
     response = requests.get(f'{DISCORD_API_URL}/users/@me', headers=headers)
     return response.json()
 
+# Función para manejar el inicio de sesión
+def handle_login():
+    query_params = st.experimental_get_query_params()
+    if 'code' in query_params:
+        code = query_params['code'][0]
+        token_data = get_access_token(code)
+        access_token = token_data.get('access_token')
+
+        if access_token:
+            user_info = get_user_info(access_token)
+            st.session_state.user = user_info
+            st.session_state.username = user_info['username']  # Guardar el nombre de usuario
+        else:
+            st.error("Error al obtener el token de acceso.")
+
 # Función para la página de pintura
 def paint_page():
     st.title("Pinta en el lienzo")
     st.write("Antes de jugar, por favor ve al menú e inicia sesión o registra tu nombre (en dispositivos móviles, toca la flecha de arriba en el lado izquierdo de tu pantalla).")
 
     # Si el usuario ha iniciado sesión, mostramos su nombre
-    if 'user' in st.session_state:
+    if st.session_state.user:
         st.write(f"Bienvenido, {st.session_state.user['username']}!")
 
     # Seleccionar color
@@ -97,36 +116,27 @@ def paint_page():
 def home_page():
     st.title("¡Bienvenido a SplashPlace!")
     st.write("SplashPlace es un lienzo colaborativo para todos los usuarios, con el propósito de que todos se pongan de acuerdo para crear algo realmente impresionante.")
-    st.write("Utiliza el menú para navegar a la página de pintura. En caso de estar en dispositivos móviles, toca la flecha de hasta arriba a la izquierda de tu pantalla. También debes de iniciar sesión en el menú para colocar píxeles.")
+    st.write("Utiliza el menú para navegar a la página de pintura. En caso de estar en dispositivos móviles, toca la flecha de arriba a la izquierda de tu pantalla. También debes de iniciar sesión en el menú para colocar píxeles.")
     st.write("Si quieres ver los registros públicos, [¡únete a nuestro servidor de Discord oficial!](https://discord.gg/EQ33kn8e5)")
 
-    st.title("Términos de Uso")
-    st.write("Al colocar tu primer píxel bajo un nombre de usuario o iniciando sesión con Discord, estás comprometiéndote a seguir estas reglas:")
-    st.write("1. Sin contenido inapropiado (no dibujar ningún contenido de tipo sexual, gore y demás).")
-    st.write("2. Respeto mutuo: Trata a todos los usuarios con respeto. No se tolerarán insultos ni acoso.")
-    st.write("3. Colaboración: Este es un espacio colaborativo; respeta las contribuciones de otros.")
-    st.write("4. Limitaciones de uso: No intentes explotar o manipular el sistema.")
-    st.write("5. Uso de recursos: Limita el uso de la plataforma a actividades artísticas.")
-    st.write("6. Responsabilidad: Cada usuario es responsable de su comportamiento en la plataforma.")
-    st.write("7. Disfruta y diviértete: Este es un espacio para la creatividad. Disfruta de la experiencia.")
+    # Opción de inicio de sesión con Discord
+    if not st.session_state.user:
+        params = {
+            'client_id': DISCORD_CLIENT_ID,
+            'redirect_uri': DISCORD_REDIRECT_URI,
+            'response_type': 'code',
+            'scope': 'identify',
+        }
+        auth_url = f'https://discord.com/api/oauth2/authorize?{urlencode(params)}'
+        st.markdown(f"[Iniciar sesión con Discord]({auth_url})")
 
 # Función principal
 def main():
+    # Manejar el inicio de sesión
+    handle_login()
+
     # Menú de navegación
     menu = st.sidebar.selectbox("Visita una página", ["Inicio", "Pintar"])
-
-    # Manejo de inicio de sesión
-    query_params = st.experimental_get_query_params()
-    if 'code' in query_params:
-        code = query_params['code'][0]  # Obtener el código de autorización
-        token_data = get_access_token(code)
-        access_token = token_data.get('access_token')
-
-        if access_token:
-            user_info = get_user_info(access_token)
-            st.session_state.user = user_info
-            # Limpiar los parámetros de consulta después del inicio de sesión
-            st.experimental_set_query_params()  # Esto elimina todos los parámetros de consulta
 
     if menu == "Inicio":
         home_page()
