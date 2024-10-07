@@ -71,21 +71,13 @@ def get_user_info(access_token):
 # Función para manejar la autenticación
 def handle_auth():
     # Si hay un código en los parámetros de la URL, manejamos la autenticación
-    if "code" in st.experimental_get_query_params():
-        code = st.experimental_get_query_params()["code"][0]
+    if "code" in st.query_params:
+        code = st.query_params["code"]
         token_response = get_access_token(code)
         if 'access_token' in token_response:
             access_token = token_response['access_token']
             user_info = get_user_info(access_token)
             st.session_state.user = user_info  # Guardar información del usuario en la sesión
-
-            # Mensaje de bienvenida
-            st.sidebar.success(f"Bienvenido, {st.session_state.user['username']}!")
-
-            # Redirigir a la página principal después de iniciar sesión
-            st.experimental_rerun()
-        else:
-            st.sidebar.error("Error al iniciar sesión. Por favor, intenta de nuevo.")
 
 # Función para la página de pintura
 def paint_page():
@@ -105,7 +97,7 @@ def paint_page():
     if current_time - st.session_state.last_action_time < 15:
         remaining_time = 15 - (current_time - st.session_state.last_action_time)
         st.warning(f"Espera {int(remaining_time)} segundos antes de colocar otro píxel.")
-        return
+        return  # Salimos de la función si no ha pasado el cooldown
 
     # Seleccionar color
     color = st.color_picker('Elige un color', '#000000')
@@ -123,13 +115,13 @@ def paint_page():
         # Cambiamos el color del píxel seleccionado
         selected_color = np.array([int(color.lstrip('#')[i:i + 2], 16) for i in (0, 2, 4)]) / 255
         st.session_state.canvas[y, x] = selected_color
-
+        
         # Guardar el estado del lienzo después de pintar
         save_canvas()
 
         # Actualizar el tiempo de la última acción
         st.session_state.last_action_time = current_time
-        
+
     # Mostrar el lienzo
     draw_canvas()
 
@@ -137,9 +129,9 @@ def paint_page():
 def home_page():
     st.title("¡Bienvenido a SplashPlace!")
     st.write("SplashPlace es un lienzo colaborativo para todos los usuarios, con el propósito de que todos se pongan de acuerdo para crear algo realmente impresionante.")
-    st.write("Utiliza el menú para navegar a la página de pintura. En caso de estar en dispositivos móviles, toca la flecha de arriba a la izquierda de tu pantalla.")
+    st.write("Utiliza el menú para navegar a la página de pintura. En caso de estar en dispositivos móviles, toca la flecha de arriba a la izquierda de tu pantalla. También debes de iniciar sesión en el menú para colocar píxeles.")
     st.write("Si quieres ver los registros públicos, [¡únete a nuestro servidor de Discord oficial!](https://discord.gg/EQ33kn8e5)")
-
+    
     st.title("Términos de Uso")
     st.write("Al colocar tu primer píxel bajo un nombre de usuario o iniciando sesión con Discord, estás comprometiéndote a seguir estas reglas:")
     st.write("1. Sin contenido inapropiado (no dibujar ningún contenido de tipo sexual, gore y demás).")
@@ -152,7 +144,8 @@ def home_page():
 
 # Función principal
 def main():
-    handle_auth()  # Manejar la autenticación de usuario
+    # Manejar la autenticación de usuario
+    handle_auth()
 
     # Menú de navegación
     menu = st.sidebar.selectbox("Visita una página", ["Inicio", "Pintar"])
