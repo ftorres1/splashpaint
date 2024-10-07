@@ -4,14 +4,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 import json
 import requests
-from matplotlib.colors import hex2color  # Importar la función hex2color desde matplotlib
+from matplotlib.colors import hex2color
 
 # Configuración de Discord
 DISCORD_CLIENT_ID = st.secrets["client_id"]
 DISCORD_CLIENT_SECRET = st.secrets["client_secret"]
 DISCORD_REDIRECT_URI = "https://splashplace.streamlit.app/"
 DISCORD_API_URL = 'https://discord.com/api/v10'
-DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1292564820016627855/akZ08vnkPWqHu-__UAxzlgB2f4T6ogyxkK8JoV8qhkB5hYz0i0zQ076JW9NI0Tow7sFe'  # URL del webhook
+DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1292564820016627855/akZ08vnkPWqHu-__UAxzlgB2f4T6ogyxkK8JoV8qhkB5hYz0i0zQ076JW9NI0Tow7sFe'
 
 # Definimos el tamaño del lienzo
 GRID_SIZE = 20
@@ -82,19 +82,18 @@ def handle_auth():
 # Función para enviar mensaje al webhook de Discord
 def send_webhook_message(user_id, row, col):
     if user_id:
-        username = user_id["username"]  # Obtener el nombre de usuario de Discord
-        message = f"{username} (Discord) ha puesto un píxel en la fila {row} y columna {col}."
+        username = user_id['username'] + " (Discord)"
     else:
-        username = st.session_state.guest_username
-        message = f"{username} (Invitado) ha puesto un píxel en la fila {row} y columna {col}."
+        username = st.session_state.guest_username + " (Invitado)"
 
+    message = f"{username} ha puesto un píxel en la fila {row} y columna {col}."
     payload = {"content": message}
     requests.post(DISCORD_WEBHOOK_URL, json=payload)
 
 # Función para la página de pintura
 def paint_page():
     st.title("Pinta en el lienzo")
-    st.write("Todos pueden ver el lienzo, pero solo los usuarios que inician sesión pueden colocar píxeles.")
+    st.write("Todos pueden ver el lienzo, pero solo los usuarios que inician sesión o se registran pueden colocar píxeles.")
 
     # Enlace para iniciar sesión
     login_url = f"https://discord.com/oauth2/authorize?client_id={DISCORD_CLIENT_ID}&scope=identify&response_type=code&redirect_uri={DISCORD_REDIRECT_URI}"
@@ -106,26 +105,41 @@ def paint_page():
     if st.sidebar.button("Registrar como invitado"):
         if guest_username:
             st.session_state.guest_username = guest_username
-            st.success("¡Bienvenido, invitado!")
+            st.success(f"Registrado como invitado: {guest_username}")
 
-    # Selección de color, fila y columna
-    color = st.color_picker("Selecciona un color", value='#000000')
-    fila = st.number_input("Fila (1-20)", min_value=1, max_value=GRID_SIZE)
-    columna = st.number_input("Columna (1-20)", min_value=1, max_value=GRID_SIZE)
+    # Mostrar lienzo
+    draw_canvas()
 
-    # Botón para pintar en el lienzo
-    if st.button("Pintar"):
-        fila_idx = fila - 1
-        col_idx = columna - 1
-        st.session_state.canvas[fila_idx, col_idx] = np.array(hex2color(color))
-        save_canvas()  # Guardar el estado del lienzo
-        send_webhook_message(st.session_state.user, fila_idx, col_idx)  # Enviar mensaje al webhook
-        st.success("Píxel pintado en el lienzo.")
+    # Verificar si el usuario ha iniciado sesión o se ha registrado
+    if st.session_state.user is None and st.session_state.guest_username is None:
+        st.error("Debes iniciar sesión o registrarte como invitado para colocar píxeles.")
+        return  # Salimos de la función si no ha iniciado sesión o registrado
 
-    draw_canvas()  # Mostrar el lienzo
+    # Seleccionar color
+    color = st.color_picker('Elige un color', '#000000')
 
-# Manejar la autenticación
-handle_auth()  # Manejar la autenticación de usuario
+    # Seleccionar fila y columna
+    fila = st.selectbox('Selecciona la fila (1-20)', range(1, GRID_SIZE + 1))
+    columna = st.selectbox('Selecciona la columna (1-20)', range(1, GRID_SIZE + 1))
 
-# Mostrar la página de pintura
-paint_page()
+    # Lógica para pintar en el lienzo
+    if st.button('Pintar'):
+        fila_idx = fila - 1  # Ajustar índice a base 0
+        col_idx = columna - 1  # Ajustar índice a base 0
+
+        # Pintamos en el lienzo
+        st.session_state.canvas[fila_idx, col_idx] = hex2color(color)
+
+        # Guardamos el estado del lienzo
+        save_canvas()
+
+        # Enviar mensaje al webhook
+        send_webhook_message(st.session_state.user, fila, columna)
+
+# Función principal
+def main():
+    handle_auth()  # Manejar la autenticación de usuario
+    paint_page()  # Mostrar la página de pintura
+
+if __name__ == "__main__":
+    main()
