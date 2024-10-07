@@ -30,8 +30,8 @@ if 'canvas' not in st.session_state:
 def draw_canvas():
     fig, ax = plt.subplots(figsize=(6, 6))
     ax.imshow(st.session_state.canvas, interpolation='nearest')
-    ax.set_xticks([])
-    ax.set_yticks([])
+    ax.set_xticks([])  # Ocultar marcas del eje X
+    ax.set_yticks([])  # Ocultar marcas del eje Y
     st.pyplot(fig)
 
 # Función para la página de pintura
@@ -90,5 +90,5 @@ def main():
         paint_page()
 
 # Ejecutamos la aplicación
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
