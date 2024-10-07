@@ -92,17 +92,6 @@ def paint_page():
         st.error("Debes iniciar sesión para colocar píxeles.")
         return  # Salimos de la función si el usuario no ha iniciado sesión
 
-    # Verificar cooldown
-    current_time = time.time()
-    if current_time - st.session_state.last_action_time < 15:
-        remaining_time = 15 - (current_time - st.session_state.last_action_time)
-        st.error(f"Espera {int(remaining_time)} segundos antes de colocar otro píxel.")
-        # Mostrar botón "Continuar" que no hace nada
-        st.button("Continuar")
-        return  # Salimos de la función si no ha pasado el cooldown
-        save_canvas()
-        draw_canvas()
-
     # Seleccionar color
     color = st.color_picker('Elige un color', '#000000')
 
@@ -125,6 +114,14 @@ def paint_page():
         
         # Actualizar el tiempo de la última acción
         st.session_state.last_action_time = time.time()
+
+    current_time = time.time()
+    if current_time - st.session_state.last_action_time < 15:
+        remaining_time = 15 - (current_time - st.session_state.last_action_time)
+        st.error(f"Espera {int(remaining_time)} segundos antes de colocar otro píxel.")
+        # Mostrar botón "Continuar" que no hace nada
+        st.button("Continuar")
+        return  # Salimos de la función si no ha pasado el cooldown
         
     # Mostrar el lienzo nuevamente
     draw_canvas()
