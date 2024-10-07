@@ -106,32 +106,27 @@ def paint_page():
     if st.sidebar.button("Registrar como invitado"):
         if guest_username:
             st.session_state.guest_username = guest_username
-
-    # Selección de color, fila y columna
-    st.sidebar.subheader("Selecciona color y ubicación")
-    color = st.sidebar.color_picker("Selecciona un color", "#000000")
-    fila = st.sidebar.number_input("Fila (1 a 20)", min_value=1, max_value=GRID_SIZE)
-    columna = st.sidebar.number_input("Columna (1 a 20)", min_value=1, max_value=GRID_SIZE)
-
-    # Botón para colocar píxel
-    if st.sidebar.button("Colocar píxel"):
-        if st.session_state.user is not None or st.session_state.guest_username:
-            fila_idx = fila - 1
-            col_idx = columna - 1
-            
-            # Pintamos en el lienzo
-            st.session_state.canvas[fila_idx, col_idx] = np.array(hex2color(color))
-            
-            # Guardamos el estado del lienzo
-            save_canvas()
-            
-            # Enviar el mensaje al webhook
-            send_webhook_message(st.session_state.user, fila_idx, col_idx)
+            st.success("Registrado como invitado")
 
     # Mostrar el lienzo
     draw_canvas()
 
-# Ejecutar la función principal
-if __name__ == "__main__":
+    # Selección de color, fila y columna para pintar
+    color = st.color_picker("Selecciona un color", value="#FFFFFF")
+    fila = st.number_input("Fila (1-20)", min_value=1, max_value=GRID_SIZE, value=1)
+    columna = st.number_input("Columna (1-20)", min_value=1, max_value=GRID_SIZE, value=1)
+
+    if st.button("Poner píxel"):
+        if st.session_state.user or st.session_state.guest_username:  # Solo los usuarios autenticados o invitados pueden poner píxeles
+            st.session_state.canvas[fila - 1, columna - 1] = np.array(hex2color(color))
+            send_webhook_message(st.session_state.user, fila - 1, columna - 1)
+            save_canvas()  # Guardar el estado del lienzo
+            st.success("¡Píxel colocado!")
+
+# Función principal
+def main():
     handle_auth()  # Manejar la autenticación de usuario
     paint_page()  # Mostrar la página de pintura
+
+if __name__ == "__main__":
+    main()
