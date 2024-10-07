@@ -146,7 +146,7 @@ def paint_page():
         else:
             user_id = None  # Para invitados
             st.session_state.canvas[fila_idx, col_idx] = np.array(hex2color(color))
-            send_webhook_message({guest_username} (user_id), fila, columna)  # Enviar mensaje al webhook para invitados
+            send_webhook_message{user_id, fila, columna)  # Enviar mensaje al webhook para invitados
 
         # Guardamos el estado del lienzo
         save_canvas()
