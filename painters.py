@@ -3,18 +3,18 @@ import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
 import json
-import requests
 from urllib.parse import urlencode
+import requests
+
+# Configuración de Discord
+DISCORD_CLIENT_ID = st.secrets["client_id"]
+DISCORD_CLIENT_SECRET = st.secrets["client_secret"]
+DISCORD_REDIRECT_URI = "https://splashplace.streamlit.app/"  # URL de Streamlit Cloud
+DISCORD_API_URL = 'https://discord.com/api/v10'
 
 # Definimos el tamaño del lienzo
 GRID_SIZE = 20
 DATABASE_FILE = 'canvas_state.json'
-
-# Cargar el client_id y client_secret desde secrets.toml
-DISCORD_CLIENT_ID = st.secrets["client_id"]
-DISCORD_CLIENT_SECRET = st.secrets["client_secret"]
-DISCORD_REDIRECT_URI = "https://splashplace.streamlit.app/"  # Ajusta esto con tu URL de Streamlit Cloud
-DISCORD_API_URL = 'https://discord.com/api/v10'
 
 # Función para cargar el estado del lienzo desde el archivo JSON
 def load_canvas():
@@ -34,10 +34,6 @@ def save_canvas():
 if 'canvas' not in st.session_state:
     st.session_state.canvas = load_canvas()
 
-# Inicializamos el estado del usuario
-if 'user' not in st.session_state:
-    st.session_state.user = None
-
 # Función para mostrar el lienzo
 def draw_canvas():
     fig, ax = plt.subplots(figsize=(6, 6))
@@ -54,7 +50,6 @@ def get_access_token(code):
         'grant_type': 'authorization_code',
         'code': code,
         'redirect_uri': DISCORD_REDIRECT_URI,
-        'scope': 'identify',
     }
     response = requests.post(f'{DISCORD_API_URL}/oauth2/token', data=payload)
     return response.json()
@@ -65,32 +60,10 @@ def get_user_info(access_token):
     response = requests.get(f'{DISCORD_API_URL}/users/@me', headers=headers)
     return response.json()
 
-# Función para manejar el inicio de sesión
-def handle_login():
-    query_params = st.query_params
-    if 'code' in query_params:
-        code = query_params['code']
-        token_data = get_access_token(code)
-        access_token = token_data.get('access_token')
-
-        if access_token:
-            user_info = get_user_info(access_token)
-            st.session_state.user = user_info
-            st.session_state.username = user_info['username']  # Guardar el nombre de usuario
-        else:
-            st.error("Error al obtener el token de acceso.")
-
 # Función para la página de pintura
 def paint_page():
     st.title("Pinta en el lienzo")
     st.write("Antes de jugar, por favor ve al menú e inicia sesión o registra tu nombre (en dispositivos móviles, toca la flecha de arriba en el lado izquierdo de tu pantalla).")
-
-    # Manejar el inicio de sesión
-    handle_login()
-
-    # Si el usuario ha iniciado sesión, mostramos su nombre
-    if st.session_state.user:
-        st.write(f"Bienvenido, {st.session_state.user['username']}!")
 
     # Seleccionar color
     color = st.color_picker('Elige un color', '#000000')
@@ -122,16 +95,55 @@ def home_page():
     st.write("Utiliza el menú para navegar a la página de pintura. En caso de estar en dispositivos móviles, toca la flecha de hasta arriba a la izquierda de tu pantalla. También debes de iniciar sesión en el menú para colocar píxeles.")
     st.write("Si quieres ver los registros públicos, [¡únete a nuestro servidor de Discord oficial!](https://discord.gg/EQ33kn8e5)")
 
+    st.title("Términos de Uso")
+    st.write("Al colocar tu primer píxel bajo un nombre de usuario o iniciando sesión con Discord, estás comprometiéndote a seguir estas reglas:")
+    st.write("1. Sin contenido inapropiado (no dibujar ningún contenido de tipo sexual, gore y demás).")
+    st.write("2. Respeto mutuo: Trata a todos los usuarios con respeto. No se tolerarán insultos ni acoso.")
+    st.write("3. Colaboración: Este es un espacio colaborativo; respeta las contribuciones de otros.")
+    st.write("4. Limitaciones de uso: No intentes explotar o manipular el sistema.")
+    st.write("5. Uso de recursos: Limita el uso de la plataforma a actividades artísticas.")
+    st.write("6. Responsabilidad: Cada usuario es responsable de su comportamiento en la plataforma.")
+    st.write("7. Disfruta y diviértete: Este es un espacio para la creatividad. Disfruta de la experiencia.")
+
 # Función principal
 def main():
     # Menú de navegación
     menu = st.sidebar.selectbox("Visita una página", ["Inicio", "Pintar"])
+    
+    # Manejo del inicio de sesión
+    query_params = st.query_params  # Obtener los parámetros de consulta
+    if 'code' in query_params:
+        code = query_params['code']
+        token_data = get_access_token(code)
+        access_token = token_data.get('access_token')
+
+        if access_token:
+            user_info = get_user_info(access_token)
+            st.session_state.user = user_info  # Guardar información del usuario en la sesión
+            st.write(f"Bienvenido, {st.session_state.user['username']}!")  # Mensaje de bienvenida
+            st.experimental_set_query_params()  # Limpiar los parámetros de consulta después del inicio de sesión
+        else:
+            st.error("Error al obtener el token de acceso.")
+
+    # Mostrar nombre de usuario si existe en la sesión
+    if 'user' in st.session_state:
+        st.sidebar.write(f"Bienvenido, {st.session_state.user['username']}!")
+    else:
+        # Opción de iniciar sesión con Discord
+        params = {
+            'client_id': DISCORD_CLIENT_ID,
+            'redirect_uri': DISCORD_REDIRECT_URI,
+            'response_type': 'code',
+            'scope': 'identify',
+        }
+        auth_url = f'https://discord.com/api/oauth2/authorize?{urlencode(params)}'
+        st.sidebar.markdown(f"[Iniciar sesión con Discord]({auth_url})")
 
     if menu == "Inicio":
         home_page()
     elif menu == "Pintar":
         paint_page()
 
-# Ejecutamos la función principal
+# Ejecutamos la aplicación
 if __name__ == "__main__":
     main()
