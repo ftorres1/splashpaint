@@ -3,8 +3,8 @@ import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
 import json
-from urllib.parse import urlencode
 import requests
+from urllib.parse import urlencode
 
 # Configuración de Discord
 DISCORD_CLIENT_ID = st.secrets["client_id"]
@@ -33,6 +33,10 @@ def save_canvas():
 # Inicializamos el lienzo como una matriz de colores (en blanco)
 if 'canvas' not in st.session_state:
     st.session_state.canvas = load_canvas()
+
+# Inicializamos el usuario
+if 'user' not in st.session_state:
+    st.session_state.user = None
 
 # Función para mostrar el lienzo
 def draw_canvas():
@@ -95,55 +99,46 @@ def home_page():
     st.write("Utiliza el menú para navegar a la página de pintura. En caso de estar en dispositivos móviles, toca la flecha de hasta arriba a la izquierda de tu pantalla. También debes de iniciar sesión en el menú para colocar píxeles.")
     st.write("Si quieres ver los registros públicos, [¡únete a nuestro servidor de Discord oficial!](https://discord.gg/EQ33kn8e5)")
 
-    st.title("Términos de Uso")
-    st.write("Al colocar tu primer píxel bajo un nombre de usuario o iniciando sesión con Discord, estás comprometiéndote a seguir estas reglas:")
-    st.write("1. Sin contenido inapropiado (no dibujar ningún contenido de tipo sexual, gore y demás).")
-    st.write("2. Respeto mutuo: Trata a todos los usuarios con respeto. No se tolerarán insultos ni acoso.")
-    st.write("3. Colaboración: Este es un espacio colaborativo; respeta las contribuciones de otros.")
-    st.write("4. Limitaciones de uso: No intentes explotar o manipular el sistema.")
-    st.write("5. Uso de recursos: Limita el uso de la plataforma a actividades artísticas.")
-    st.write("6. Responsabilidad: Cada usuario es responsable de su comportamiento en la plataforma.")
-    st.write("7. Disfruta y diviértete: Este es un espacio para la creatividad. Disfruta de la experiencia.")
+    # Mostrar información del usuario si ha iniciado sesión
+    if st.session_state.user:
+        st.sidebar.write(f"Bienvenido, {st.session_state.user['username']}!")
 
-# Función principal
-def main():
-    # Menú de navegación
-    menu = st.sidebar.selectbox("Visita una página", ["Inicio", "Pintar"])
-    
-    # Manejo del inicio de sesión
-    query_params = st.query_params  # Obtener los parámetros de consulta
-    if 'code' in query_params:
+# Función para manejar el inicio de sesión con Discord
+def handle_discord_login():
+    query_params = st.query_params  # Obtener parámetros de consulta
+    if 'code' in query_params:  # Verificar si hay un código de autorización
         code = query_params['code']
         token_data = get_access_token(code)
         access_token = token_data.get('access_token')
 
         if access_token:
             user_info = get_user_info(access_token)
-            st.session_state.user = user_info  # Guardar información del usuario en la sesión
-            st.write(f"Bienvenido, {st.session_state.user['username']}!")  # Mensaje de bienvenida
-            st.experimental_set_query_params()  # Limpiar los parámetros de consulta después del inicio de sesión
+            st.session_state.user = user_info  # Guardar información del usuario
+            # No es necesario establecer parámetros de consulta después de iniciar sesión
         else:
             st.error("Error al obtener el token de acceso.")
 
-    # Mostrar nombre de usuario si existe en la sesión
-    if 'user' in st.session_state:
-        st.sidebar.write(f"Bienvenido, {st.session_state.user['username']}!")
-    else:
-        # Opción de iniciar sesión con Discord
-        params = {
-            'client_id': DISCORD_CLIENT_ID,
-            'redirect_uri': DISCORD_REDIRECT_URI,
-            'response_type': 'code',
-            'scope': 'identify',
-        }
-        auth_url = f'https://discord.com/api/oauth2/authorize?{urlencode(params)}'
-        st.sidebar.markdown(f"[Iniciar sesión con Discord]({auth_url})")
+    # Opción de iniciar sesión con Discord
+    params = {
+        'client_id': DISCORD_CLIENT_ID,
+        'redirect_uri': DISCORD_REDIRECT_URI,
+        'response_type': 'code',
+        'scope': 'identify',
+    }
+    auth_url = f'https://discord.com/api/oauth2/authorize?{urlencode(params)}'
+    st.sidebar.markdown(f"[Iniciar sesión con Discord]({auth_url})")
+
+# Función principal
+def main():
+    handle_discord_login()  # Manejar inicio de sesión
+
+    # Menú de navegación
+    menu = st.sidebar.selectbox("Visita una página", ["Inicio", "Pintar"])
 
     if menu == "Inicio":
         home_page()
     elif menu == "Pintar":
         paint_page()
 
-# Ejecutamos la aplicación
 if __name__ == "__main__":
     main()
