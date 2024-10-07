@@ -82,11 +82,12 @@ def handle_auth():
 # Función para enviar mensaje al webhook de Discord
 def send_webhook_message(user_id, row, col):
     if user_id:
-        username = user_id
+        username = user_id["username"]  # Obtener el nombre de usuario de Discord
+        message = f"{username} (Discord) ha puesto un píxel en la fila {row} y columna {col}."
     else:
-        username = "Invitado"
+        username = st.session_state.guest_username
+        message = f"{username} (Invitado) ha puesto un píxel en la fila {row} y columna {col}."
 
-    message = f"{username} ha puesto un píxel en la fila {row} y columna {col}."
     payload = {"content": message}
     requests.post(DISCORD_WEBHOOK_URL, json=payload)
 
@@ -105,30 +106,29 @@ def paint_page():
     if st.sidebar.button("Registrar como invitado"):
         if guest_username:
             st.session_state.guest_username = guest_username
-            st.success(f"Registrado como invitado: {guest_username}")
+            st.success(f"Has registrado como invitado: {guest_username}")
+    
+    # Color para pintar
+    color = st.sidebar.color_picker("Elige un color", "#000000")
+    row = st.sidebar.number_input("Fila", 1, GRID_SIZE, 1) - 1  # Ajustar a índice (0-19)
+    col = st.sidebar.number_input("Columna", 1, GRID_SIZE, 1) - 1  # Ajustar a índice (0-19)
+    
+    if st.sidebar.button("Pintar"):
+        if (0 <= row < GRID_SIZE) and (0 <= col < GRID_SIZE):
+            # Pintamos en el lienzo
+            st.session_state.canvas[row, col] = hex2color(color)  # Usar hex2color para obtener el color
+            save_canvas()  # Guardamos el estado del lienzo
+            send_webhook_message(st.session_state.user, row, col)  # Enviar mensaje al webhook
+            st.success("Píxel pintado.")
         else:
-            st.error("Por favor, ingresa un nombre de usuario.")
+            st.error("Fila o columna fuera de rango.")
+    
+    draw_canvas()  # Mostrar el lienzo
 
-    # Pintar en el lienzo
-    color = st.color_picker("Elige un color", value="#ffffff")  # Color predeterminado en blanco
-    fila = st.number_input("Fila", min_value=1, max_value=GRID_SIZE, value=1)
-    columna = st.number_input("Columna", min_value=1, max_value=GRID_SIZE, value=1)
+# Función principal
+def main():
+    handle_auth()  # Manejar la autenticación de usuario
+    paint_page()  # Mostrar la página de pintura
 
-    if st.button("Pintar"):
-        fila_idx = fila - 1
-        col_idx = columna - 1
-        color_rgb = hex2color(color)
-        st.session_state.canvas[fila_idx, col_idx] = np.array(color_rgb)
-        save_canvas()  # Guardar el estado del lienzo
-        # Enviar mensaje al webhook de Discord
-        if st.session_state.user:
-            send_webhook_message(st.session_state.user['username'], fila, columna)
-        else:
-            send_webhook_message("Invitado", fila, columna)
-
-# Manejar la autenticación
-handle_auth()
-
-# Mostrar el lienzo y la página de pintura
-draw_canvas()
-paint_page()
+if __name__ == "__main__":
+    main()
