@@ -1,149 +1,160 @@
-import os
 import streamlit as st
 import numpy as np
-import matplotlib.pyplot as plt
+from PIL import Image
 import json
-import requests
-from matplotlib.colors import hex2color
+import os
+import time
 
-# Configuración de Discord
-DISCORD_CLIENT_ID = st.secrets["client_id"]
-DISCORD_CLIENT_SECRET = st.secrets["client_secret"]
-DISCORD_REDIRECT_URI = "https://splashplace.streamlit.app/"
-DISCORD_API_URL = 'https://discord.com/api/v10'
-DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1292564820016627855/akZ08vnkPWqHu-__UAxzlgB2f4T6ogyxkK8JoV8qhkB5hYz0i0zQ076JW9NI0Tow7sFe'
+# =========================
+# CONFIG
+# =========================
 
-# Definimos el tamaño del lienzo
-GRID_SIZE = 20
-DATABASE_FILE = 'canvas_state.json'
+GRID_SIZE = 30
+PIXEL_SIZE = 20
+SAVE_FILE = "canvas.json"
+COOLDOWN = 5  # segundos
 
-# Función para cargar el estado del lienzo desde el archivo JSON
+st.set_page_config(page_title="Mini r/place", layout="centered")
+
+st.title("🎨 Mini r/place")
+
+# =========================
+# FUNCIONES
+# =========================
+
+def create_blank_canvas():
+    return np.ones((GRID_SIZE, GRID_SIZE, 3), dtype=np.uint8) * 255
+
+
 def load_canvas():
-    if os.path.exists(DATABASE_FILE):
-        with open(DATABASE_FILE, 'r') as f:
+    if os.path.exists(SAVE_FILE):
+        with open(SAVE_FILE, "r") as f:
             data = json.load(f)
-            return np.array(data['canvas'], dtype=float)
-    else:
-        return np.ones((GRID_SIZE, GRID_SIZE, 3))  # Blanco (1,1,1 en RGB)
+            return np.array(data, dtype=np.uint8)
 
-# Función para guardar el estado del lienzo en el archivo JSON
+    return create_blank_canvas()
+
+
 def save_canvas():
-    with open(DATABASE_FILE, 'w') as f:
-        json.dump({'canvas': st.session_state.canvas.tolist()}, f)
+    with open(SAVE_FILE, "w") as f:
+        json.dump(st.session_state.canvas.tolist(), f)
 
-# Inicializamos el lienzo como una matriz de colores (en blanco)
-if 'canvas' not in st.session_state:
+
+def draw_canvas():
+    img = Image.fromarray(st.session_state.canvas, "RGB")
+
+    # ampliar imagen sin blur
+    img = img.resize(
+        (GRID_SIZE * PIXEL_SIZE, GRID_SIZE * PIXEL_SIZE),
+        Image.NEAREST
+    )
+
+    st.image(img)
+
+
+# =========================
+# SESSION STATE
+# =========================
+
+if "canvas" not in st.session_state:
     st.session_state.canvas = load_canvas()
 
-# Inicializamos el usuario
-if 'user' not in st.session_state:
-    st.session_state.user = None
+if "last_paint" not in st.session_state:
+    st.session_state.last_paint = 0
 
-# Inicializamos el nombre de usuario para modo invitado
-if 'guest_username' not in st.session_state:
-    st.session_state.guest_username = None
+if "username" not in st.session_state:
+    st.session_state.username = ""
 
-# Función para mostrar el lienzo
-def draw_canvas():
-    fig, ax = plt.subplots(figsize=(6, 6))
-    ax.imshow(st.session_state.canvas, interpolation='nearest')
-    ax.set_xticks([])  # Ocultar marcas del eje X
-    ax.set_yticks([])  # Ocultar marcas del eje Y
-    st.pyplot(fig)
 
-# Función para obtener el token de acceso
-def get_access_token(code):
-    payload = {
-        'client_id': DISCORD_CLIENT_ID,
-        'client_secret': DISCORD_CLIENT_SECRET,
-        'grant_type': 'authorization_code',
-        'code': code,
-        'redirect_uri': DISCORD_REDIRECT_URI,
-    }
-    response = requests.post(f'{DISCORD_API_URL}/oauth2/token', data=payload)
-    return response.json()
+# =========================
+# LOGIN SIMPLE
+# =========================
 
-# Función para obtener el usuario de Discord
-def get_user_info(access_token):
-    headers = {'Authorization': f'Bearer {access_token}'}
-    response = requests.get(f'{DISCORD_API_URL}/users/@me', headers=headers)
-    return response.json()
+st.sidebar.title("Usuario")
 
-# Función para manejar la autenticación
-def handle_auth():
-    if "code" in st.query_params:
-        code = st.query_params["code"]
-        token_response = get_access_token(code)
-        if 'access_token' in token_response:
-            access_token = token_response['access_token']
-            user_info = get_user_info(access_token)
-            st.session_state.user = user_info  # Guardar información del usuario en la sesión
+username = st.sidebar.text_input(
+    "Nombre",
+    value=st.session_state.username
+)
 
-# Función para enviar mensaje al webhook de Discord
-def send_webhook_message(user_id, row, col):
-    if user_id:
-        username = user_id['username'] + " (Discord)"
-    else:
-        username = st.session_state.guest_username + " (Invitado)"
+if st.sidebar.button("Guardar nombre"):
+    st.session_state.username = username
+    st.sidebar.success("Nombre guardado")
 
-    message = f"{username} ha puesto un píxel en la fila {row} y columna {col}."
-    payload = {"content": message}
-    requests.post(DISCORD_WEBHOOK_URL, json=payload)
+# =========================
+# MOSTRAR CANVAS
+# =========================
 
-def paint_page():
-    st.title("Pinta en el lienzo")
-    st.write("Usa el menú de la izquierda para registrarte o iniciar sesión (en dispositivos móviles, usa la flecha de arriba a la izquierda para abrir el menú)")
-    st.button("Refrescar Lienzo")
+draw_canvas()
 
-    # Enlace para iniciar sesión
-    login_url = f"https://discord.com/oauth2/authorize?client_id={DISCORD_CLIENT_ID}&scope=identify&response_type=code&redirect_uri={DISCORD_REDIRECT_URI}"
-    st.sidebar.markdown(f"[Iniciar sesión con Discord]({login_url})")
+st.divider()
 
-    # Opción de registro de nombre de usuario
-    st.sidebar.subheader("O Registrar nombre de usuario")
-    guest_username = st.sidebar.text_input("Ingresa un nombre de usuario")
-    if st.sidebar.button("Registrar como invitado"):
-        if guest_username:
-            st.session_state.guest_username = guest_username
-            st.success(f"Registrado como invitado: {guest_username}")
+# =========================
+# CONTROLES
+# =========================
 
-    # Verificar si el usuario ha iniciado sesión o se ha registrado
-    if st.session_state.user is None and st.session_state.guest_username is None:
-        st.error("Debes iniciar sesión o registrarte como invitado para colocar píxeles.")
-        return  # Salimos de la función si no ha iniciado sesión o registrado
+col1, col2 = st.columns(2)
 
-    # Si el usuario ha iniciado sesión, mostrar el mensaje de éxito
-    if st.session_state.user:
-        st.success(f"Iniciaste sesión como: {st.session_state.user['username']}")
+with col1:
+    x = st.number_input(
+        "X",
+        min_value=0,
+        max_value=GRID_SIZE - 1,
+        value=0
+    )
 
-     # Mostrar lienzo
-    draw_canvas()
+with col2:
+    y = st.number_input(
+        "Y",
+        min_value=0,
+        max_value=GRID_SIZE - 1,
+        value=0
+    )
 
-    # Seleccionar color
-    color = st.color_picker('Elige un color', '#000000')
+color = st.color_picker(
+    "Color",
+    "#000000"
+)
 
-    # Seleccionar fila y columna
-    fila = st.selectbox('Selecciona la fila (1-20)', range(1, GRID_SIZE + 1))
-    columna = st.selectbox('Selecciona la columna (1-20)', range(1, GRID_SIZE + 1))
+# =========================
+# PINTAR
+# =========================
 
-    # Lógica para pintar en el lienzo
-    if st.button('Pintar'):
-        fila_idx = fila - 1  # Ajustar índice a base 0
-        col_idx = columna - 1  # Ajustar índice a base 0
+if st.button("Pintar Pixel"):
 
-        # Pintamos en el lienzo
-        st.session_state.canvas[fila_idx, col_idx] = hex2color(color)
+    if st.session_state.username == "":
+        st.error("Pon un nombre primero")
+        st.stop()
 
-        # Guardamos el estado del lienzo
-        save_canvas()
+    current_time = time.time()
 
-        # Enviar mensaje al webhook
-        send_webhook_message(st.session_state.user, fila, columna)
+    if current_time - st.session_state.last_paint < COOLDOWN:
+        remaining = int(
+            COOLDOWN - (current_time - st.session_state.last_paint)
+        )
 
-# Función principal
-def main():
-    handle_auth()  # Manejar la autenticación de usuario
-    paint_page()  # Mostrar la página de pintura
+        st.error(f"Espera {remaining}s")
+        st.stop()
 
-if __name__ == "__main__":
-    main()
+    # convertir HEX a RGB
+    hex_color = color.lstrip("#")
+
+    rgb = [
+        int(hex_color[i:i+2], 16)
+        for i in (0, 2, 4)
+    ]
+
+    # pintar pixel
+    st.session_state.canvas[y, x] = rgb
+
+    # guardar
+    save_canvas()
+
+    # cooldown
+    st.session_state.last_paint = current_time
+
+    st.success(
+        f"{st.session_state.username} pintó en ({x}, {y})"
+    )
+
+    st.rerun()
