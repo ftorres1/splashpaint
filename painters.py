@@ -222,6 +222,13 @@ st.sidebar.success(
     f"Conectado como {user['username']}"
 )
 
+st.sidebar.divider()
+
+st.sidebar.link_button(
+    "Unirse al Discord",
+    "https://discord.gg/wdYAVkey5A"
+)
+
 # ======================
 # ADMIN PANEL
 # ======================
