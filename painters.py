@@ -4,38 +4,40 @@ from PIL import Image
 import json, os, time, requests
 from matplotlib.colors import hex2color
 
-# tamaño de la canvas
+# ======================
+# CONFIG
+# ======================
+
 GRID_SIZE = 30
-
-# tamaño visual de cada pixel
 PIXEL_SIZE = 20
-
-# archivo donde se guarda la canvas
 SAVE_FILE = "canvas_state.json"
-
-# cooldown entre pixeles
 COOLDOWN = 5
 
-# TU DISCORD ID
 ADMIN_ID = "768543062816456754"
 
-# datos discord
 CLIENT_ID = st.secrets["client_id"]
 CLIENT_SECRET = st.secrets["client_secret"]
 REDIRECT_URI = st.secrets["redirect_uri"]
 
 DISCORD_API = "https://discord.com/api/v10"
 
-# título página
+# ======================
+# PAGE
+# ======================
+
 st.set_page_config(page_title="Chaquetas")
 
 st.title("Chaquetas")
 
-# crear canvas blanca
+# ======================
+# CANVAS FUNCTIONS
+# ======================
+
+# crear canvas vacía
 def create_blank_canvas():
     return np.ones((GRID_SIZE, GRID_SIZE, 3))
 
-# cargar canvas
+# cargar canvas desde json
 def load_canvas():
 
     if os.path.exists(SAVE_FILE):
@@ -50,7 +52,7 @@ def load_canvas():
 
                     canvas = np.array(data["canvas"])
 
-                    # verificar tamaño correcto
+                    # revisar tamaño
                     if canvas.shape == (GRID_SIZE, GRID_SIZE, 3):
                         return canvas
 
@@ -60,25 +62,22 @@ def load_canvas():
     return create_blank_canvas()
 
 # guardar canvas
-def save_canvas():
+def save_canvas(canvas):
 
     with open(SAVE_FILE, "w") as f:
 
         json.dump(
             {
-                "canvas":
-                st.session_state.canvas.tolist()
+                "canvas": canvas.tolist()
             },
             f
         )
 
-# mostrar canvas
-def draw_canvas():
+# dibujar canvas
+def draw_canvas(canvas):
 
     img = Image.fromarray(
-        (
-            st.session_state.canvas * 255
-        ).astype(np.uint8)
+        (canvas * 255).astype(np.uint8)
     )
 
     img = img.resize(
@@ -91,7 +90,11 @@ def draw_canvas():
 
     st.image(img)
 
-# obtener token discord
+# ======================
+# DISCORD LOGIN
+# ======================
+
+# obtener token
 def get_access_token(code):
 
     payload = {
@@ -107,7 +110,7 @@ def get_access_token(code):
         data=payload
     ).json()
 
-# obtener usuario discord
+# obtener usuario
 def get_user(token):
 
     headers = {
@@ -119,7 +122,7 @@ def get_user(token):
         headers=headers
     ).json()
 
-# login opcional
+# manejar login
 def handle_login():
 
     if "user" not in st.session_state:
@@ -137,25 +140,26 @@ def handle_login():
                 token_data["access_token"]
             )
 
-# cargar canvas
-if "canvas" not in st.session_state:
-    st.session_state.canvas = load_canvas()
+# ======================
+# START
+# ======================
 
-# cooldown
-if "last_paint" not in st.session_state:
-    st.session_state.last_paint = 0
-
-# iniciar login
 handle_login()
 
 user = st.session_state.user
 
-# mostrar canvas aunque no haya login
-draw_canvas()
+# cargar canvas GLOBAL
+canvas = load_canvas()
+
+# mostrar canvas SIEMPRE
+draw_canvas(canvas)
 
 st.divider()
 
-# si NO ha iniciado sesión
+# ======================
+# NO LOGIN
+# ======================
+
 if user is None:
 
     login_url = (
@@ -177,12 +181,18 @@ if user is None:
 
     st.stop()
 
-# mostrar usuario
+# ======================
+# USER INFO
+# ======================
+
 st.sidebar.success(
     f"Conectado como {user['username']}"
 )
 
-# PANEL ADMIN
+# ======================
+# ADMIN PANEL
+# ======================
+
 if str(user["id"]) == ADMIN_ID:
 
     st.sidebar.divider()
@@ -191,9 +201,9 @@ if str(user["id"]) == ADMIN_ID:
 
     if st.sidebar.button("Restablecer Canvas"):
 
-        st.session_state.canvas = create_blank_canvas()
+        blank = create_blank_canvas()
 
-        save_canvas()
+        save_canvas(blank)
 
         st.sidebar.success(
             "Canvas restablecida"
@@ -201,7 +211,17 @@ if str(user["id"]) == ADMIN_ID:
 
         st.rerun()
 
-# coordenadas
+# ======================
+# COOLDOWN
+# ======================
+
+if "last_paint" not in st.session_state:
+    st.session_state.last_paint = 0
+
+# ======================
+# COORDS
+# ======================
+
 c1, c2 = st.columns(2)
 
 with c1:
@@ -222,35 +242,42 @@ with c2:
         0
     )
 
-# selector color
+# ======================
+# COLOR
+# ======================
+
 color = st.color_picker(
     "Color",
     "#000000"
 )
 
-# pintar pixel
+# ======================
+# PAINT
+# ======================
+
 if st.button("Pintar Pixel"):
 
     current_time = time.time()
 
-    # revisar cooldown
-    if str(user["id"]) != ADMIN_ID:
+    # cooldown
+    if current_time - st.session_state.last_paint < COOLDOWN:
 
-        if current_time - st.session_state.last_paint < COOLDOWN:
+        st.error(
+            f"Espera {int(COOLDOWN - (current_time - st.session_state.last_paint))}s"
+        )
 
-            st.error(
-                f"Espera {int(COOLDOWN - (current_time - st.session_state.last_paint))}s"
-            )
+        st.stop()
 
-            st.stop()
+    # recargar canvas más nueva
+    canvas = load_canvas()
 
     # pintar pixel
-    st.session_state.canvas[y, x] = hex2color(color)
+    canvas[y, x] = hex2color(color)
 
-    # guardar
-    save_canvas()
+    # guardar canvas global
+    save_canvas(canvas)
 
-    # cooldown
+    # guardar tiempo
     st.session_state.last_paint = current_time
 
     st.success(
