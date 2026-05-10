@@ -253,7 +253,7 @@ if str(user["id"]) == ADMIN_ID:
             f"🛠️ {user['username']} restableció la canvas."
         )
 
-        st..success(
+        st.success(
             "Canvas restablecida"
         )
 
