@@ -21,6 +21,8 @@ REDIRECT_URI = st.secrets["redirect_uri"]
 
 DISCORD_API = "https://discord.com/api/v10"
 
+WEBHOOK_URL = "https://discord.com/api/webhooks/1502851795599491115/0u94xt24W6-lRmSHoiSzwRPs6liPRLm94V7XmkdoghpUhZSS3MUUVV-rhgjzbhFlcitw"
+
 # ======================
 # PAGE
 # ======================
@@ -37,7 +39,7 @@ st.title("Chaquetas")
 def create_blank_canvas():
     return np.ones((GRID_SIZE, GRID_SIZE, 3))
 
-# cargar canvas desde json
+# cargar canvas
 def load_canvas():
 
     if os.path.exists(SAVE_FILE):
@@ -52,7 +54,6 @@ def load_canvas():
 
                     canvas = np.array(data["canvas"])
 
-                    # revisar tamaño
                     if canvas.shape == (GRID_SIZE, GRID_SIZE, 3):
                         return canvas
 
@@ -73,7 +74,7 @@ def save_canvas(canvas):
             f
         )
 
-# dibujar canvas
+# mostrar canvas
 def draw_canvas(canvas):
 
     img = Image.fromarray(
@@ -89,6 +90,24 @@ def draw_canvas(canvas):
     )
 
     st.image(img)
+
+# ======================
+# WEBHOOK
+# ======================
+
+def send_webhook(message):
+
+    try:
+
+        requests.post(
+            WEBHOOK_URL,
+            json={
+                "content": message
+            }
+        )
+
+    except:
+        pass
 
 # ======================
 # DISCORD LOGIN
@@ -122,11 +141,14 @@ def get_user(token):
         headers=headers
     ).json()
 
-# manejar login
+# login
 def handle_login():
 
     if "user" not in st.session_state:
         st.session_state.user = None
+
+    if "login_sent" not in st.session_state:
+        st.session_state.login_sent = False
 
     if "code" in st.query_params:
 
@@ -136,9 +158,20 @@ def handle_login():
 
         if "access_token" in token_data:
 
-            st.session_state.user = get_user(
+            user_data = get_user(
                 token_data["access_token"]
             )
+
+            st.session_state.user = user_data
+
+            # webhook login
+            if not st.session_state.login_sent:
+
+                send_webhook(
+                    f"🔐 {user_data['username']} inició sesión."
+                )
+
+                st.session_state.login_sent = True
 
 # ======================
 # START
@@ -148,10 +181,10 @@ handle_login()
 
 user = st.session_state.user
 
-# cargar canvas GLOBAL
+# cargar canvas global
 canvas = load_canvas()
 
-# mostrar canvas SIEMPRE
+# mostrar canvas
 draw_canvas(canvas)
 
 st.divider()
@@ -204,6 +237,10 @@ if str(user["id"]) == ADMIN_ID:
         blank = create_blank_canvas()
 
         save_canvas(blank)
+
+        send_webhook(
+            f"🛠️ {user['username']} restableció la canvas."
+        )
 
         st.sidebar.success(
             "Canvas restablecida"
@@ -268,16 +305,21 @@ if st.button("Pintar Pixel"):
 
         st.stop()
 
-    # recargar canvas más nueva
+    # recargar canvas
     canvas = load_canvas()
 
     # pintar pixel
     canvas[y, x] = hex2color(color)
 
-    # guardar canvas global
+    # guardar
     save_canvas(canvas)
 
-    # guardar tiempo
+    # webhook pixel
+    send_webhook(
+        f"🎨 {user['username']} puso un pixel en X:{x} Y:{y} con color {color}"
+    )
+
+    # cooldown
     st.session_state.last_paint = current_time
 
     st.success(
