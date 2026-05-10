@@ -16,22 +16,23 @@ SAVE_FILE = "canvas_state.json"
 # cooldown entre pixeles
 COOLDOWN = 5
 
-# datos de discord desde secrets.toml
+# datos discord
 CLIENT_ID = st.secrets["client_id"]
 CLIENT_SECRET = st.secrets["client_secret"]
 REDIRECT_URI = st.secrets["redirect_uri"]
 
 DISCORD_API = "https://discord.com/api/v10"
 
-st.set_page_config(page_title="Mini r/place")
+# título página
+st.set_page_config(page_title="Chaquetas App")
 
-st.title("🎨 Mini r/place")
+st.title("🧥 Chaquetas App")
 
 # crear canvas blanca
 def create_blank_canvas():
     return np.ones((GRID_SIZE, GRID_SIZE, 3))
 
-# cargar canvas desde json
+# cargar canvas
 def load_canvas():
 
     if os.path.exists(SAVE_FILE):
@@ -60,14 +61,12 @@ def save_canvas():
 # mostrar canvas
 def draw_canvas():
 
-    # convertir colores de 0-1 a 0-255
     img = Image.fromarray(
         (
             st.session_state.canvas * 255
         ).astype(np.uint8)
     )
 
-    # agrandar imagen sin blur
     img = img.resize(
         (
             GRID_SIZE * PIXEL_SIZE,
@@ -106,13 +105,12 @@ def get_user(token):
         headers=headers
     ).json()
 
-# login obligatorio discord
+# login opcional
 def handle_login():
 
     if "user" not in st.session_state:
         st.session_state.user = None
 
-    # detectar code oauth
     if "code" in st.query_params:
 
         token_data = get_access_token(
@@ -125,25 +123,7 @@ def handle_login():
                 token_data["access_token"]
             )
 
-    # si no inició sesión
-    if st.session_state.user is None:
-
-        login_url = (
-            "https://discord.com/oauth2/authorize"
-            f"?client_id={CLIENT_ID}"
-            "&response_type=code"
-            f"&redirect_uri={REDIRECT_URI}"
-            "&scope=identify"
-        )
-
-        st.link_button(
-            "Login con Discord",
-            login_url
-        )
-
-        st.stop()
-
-# cargar canvas solo una vez
+# cargar canvas
 if "canvas" not in st.session_state:
     st.session_state.canvas = load_canvas()
 
@@ -156,15 +136,39 @@ handle_login()
 
 user = st.session_state.user
 
+# mostrar canvas aunque no haya login
+draw_canvas()
+
+st.divider()
+
+# si NO ha iniciado sesión
+if user is None:
+
+    login_url = (
+        "https://discord.com/oauth2/authorize"
+        f"?client_id={CLIENT_ID}"
+        "&response_type=code"
+        f"&redirect_uri={REDIRECT_URI}"
+        "&scope=identify"
+    )
+
+    st.warning(
+        "Inicia sesión con Discord para pintar."
+    )
+
+    st.link_button(
+        "Login con Discord",
+        login_url
+    )
+
+    st.stop()
+
 # mostrar usuario
 st.sidebar.success(
     f"Conectado como {user['username']}"
 )
 
-# mostrar canvas
-draw_canvas()
-
-# columnas para coordenadas
+# coordenadas
 c1, c2 = st.columns(2)
 
 with c1:
@@ -191,12 +195,11 @@ color = st.color_picker(
     "#000000"
 )
 
-# botón pintar
+# pintar pixel
 if st.button("Pintar Pixel"):
 
     current_time = time.time()
 
-    # revisar cooldown
     if current_time - st.session_state.last_paint < COOLDOWN:
 
         st.error(
@@ -205,18 +208,14 @@ if st.button("Pintar Pixel"):
 
         st.stop()
 
-    # pintar pixel
     st.session_state.canvas[y, x] = hex2color(color)
 
-    # guardar canvas
     save_canvas()
 
-    # actualizar cooldown
     st.session_state.last_paint = current_time
 
     st.success(
         f"{user['username']} pintó en ({x}, {y})"
     )
 
-    # refrescar página
     st.rerun()
