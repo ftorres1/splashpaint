@@ -218,18 +218,21 @@ if user is None:
 # USER INFO
 # ======================
 
-st.sidebar.success(
-    f"Conectado como {user['username']}"
-)
-
+# sidebar discord
 st.sidebar.divider()
 
-if user is None:
 st.sidebar.link_button(
     "Unirse al Discord",
     "https://discord.gg/wdYAVkey5A"
 )
 
+# mostrar usuario si hay login
+if user is not None:
+
+    st.sidebar.success(
+        f"Conectado como {user['username']}"
+    )
+    
 # ======================
 # ADMIN PANEL
 # ======================
