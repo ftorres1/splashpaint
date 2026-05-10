@@ -224,6 +224,7 @@ st.sidebar.success(
 
 st.sidebar.divider()
 
+if user is None:
 st.sidebar.link_button(
     "Unirse al Discord",
     "https://discord.gg/wdYAVkey5A"
