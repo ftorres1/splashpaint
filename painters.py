@@ -218,13 +218,8 @@ if user is None:
 # USER INFO
 # ======================
 
-# sidebar discord
+#  discord
 st.sidebar.divider()
-
-st.sidebar.link_button(
-    "Unirse al Discord",
-    "https://discord.gg/wdYAVkey5A"
-)
 
 # mostrar usuario si hay login
 if user is not None:
@@ -232,6 +227,11 @@ if user is not None:
     st.sidebar.success(
         f"Conectado como {user['username']}"
     )
+st.sidebar.link_button(
+    
+    "Unirse al Discord",
+    "https://discord.gg/wdYAVkey5A"
+)
     
 # ======================
 # ADMIN PANEL
@@ -253,7 +253,7 @@ if str(user["id"]) == ADMIN_ID:
             f"🛠️ {user['username']} restableció la canvas."
         )
 
-        st.sidebar.success(
+        st..success(
             "Canvas restablecida"
         )
 
