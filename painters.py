@@ -234,15 +234,15 @@ if st.button("Pintar Pixel"):
     current_time = time.time()
 
     # revisar cooldown
-if str(user["id"]) != ADMIN_ID:
+    if str(user["id"]) != ADMIN_ID:
 
-    if current_time - st.session_state.last_paint < COOLDOWN:
+        if current_time - st.session_state.last_paint < COOLDOWN:
 
-        st.error(
-            f"Espera {int(COOLDOWN - (current_time - st.session_state.last_paint))}s"
-        )
+            st.error(
+                f"Espera {int(COOLDOWN - (current_time - st.session_state.last_paint))}s"
+            )
 
-        st.stop()
+            st.stop()
 
     # pintar pixel
     st.session_state.canvas[y, x] = hex2color(color)
