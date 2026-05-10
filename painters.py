@@ -40,11 +40,22 @@ def load_canvas():
 
     if os.path.exists(SAVE_FILE):
 
-        with open(SAVE_FILE, "r") as f:
+        try:
 
-            return np.array(
-                json.load(f)["canvas"]
-            )
+            with open(SAVE_FILE, "r") as f:
+
+                data = json.load(f)
+
+                if "canvas" in data:
+
+                    canvas = np.array(data["canvas"])
+
+                    # verificar tamaño correcto
+                    if canvas.shape == (GRID_SIZE, GRID_SIZE, 3):
+                        return canvas
+
+        except:
+            pass
 
     return create_blank_canvas()
 
