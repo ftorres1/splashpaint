@@ -16,6 +16,9 @@ SAVE_FILE = "canvas_state.json"
 # cooldown entre pixeles
 COOLDOWN = 5
 
+# TU DISCORD ID
+ADMIN_ID = "768543062816456754"
+
 # datos discord
 CLIENT_ID = st.secrets["client_id"]
 CLIENT_SECRET = st.secrets["client_secret"]
@@ -24,9 +27,9 @@ REDIRECT_URI = st.secrets["redirect_uri"]
 DISCORD_API = "https://discord.com/api/v10"
 
 # título página
-st.set_page_config(page_title="Chaquetas App")
+st.set_page_config(page_title="Chaquetas")
 
-st.title("🧥 Chaquetas App")
+st.title("Chaquetas")
 
 # crear canvas blanca
 def create_blank_canvas():
@@ -168,6 +171,25 @@ st.sidebar.success(
     f"Conectado como {user['username']}"
 )
 
+# PANEL ADMIN
+if str(user["id"]) == ADMIN_ID:
+
+    st.sidebar.divider()
+
+    st.sidebar.title("Admin Panel")
+
+    if st.sidebar.button("Restablecer Canvas"):
+
+        st.session_state.canvas = create_blank_canvas()
+
+        save_canvas()
+
+        st.sidebar.success(
+            "Canvas restablecida"
+        )
+
+        st.rerun()
+
 # coordenadas
 c1, c2 = st.columns(2)
 
@@ -200,6 +222,7 @@ if st.button("Pintar Pixel"):
 
     current_time = time.time()
 
+    # revisar cooldown
     if current_time - st.session_state.last_paint < COOLDOWN:
 
         st.error(
@@ -208,10 +231,13 @@ if st.button("Pintar Pixel"):
 
         st.stop()
 
+    # pintar pixel
     st.session_state.canvas[y, x] = hex2color(color)
 
+    # guardar
     save_canvas()
 
+    # cooldown
     st.session_state.last_paint = current_time
 
     st.success(
